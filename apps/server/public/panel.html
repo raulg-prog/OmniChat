@@ -209,6 +209,9 @@
   .chatters .rk { width: 14px; color: var(--muted); font-size: 11px; font-variant-numeric: tabular-nums; }
   .chatters .nm { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-weight: 600; }
   .chatters .ct { color: var(--muted); font-variant-numeric: tabular-nums; }
+  .chatters .cp { display: inline-flex; flex: none; }
+  .chatters .cp svg { width: 13px; height: 13px; fill: currentColor; }
+  .chatters .cp.p-twitch { color: var(--twitch); } .chatters .cp.p-kick { color: var(--kick); } .chatters .cp.p-youtube { color: var(--youtube); } .chatters .cp.p-x { color: var(--x); }
   .cashtag { color: var(--accent); font-weight: 700; background: rgba(79,227,180,.12); border-radius: 4px; padding: 0 3px; }
 </style>
 
@@ -550,21 +553,21 @@
     for (const e of win) if (e.mood !== 0) { mSum += e.mood; mN++; }
     const moodAvg = mN ? mSum / mN : 0;
     const moodPct = Math.round((moodAvg + 1) * 50);
-    const moodWord = moodAvg > 0.33 ? "Bullish" : moodAvg < -0.33 ? "Bearish" : "Neutral";
+    const moodWord = moodAvg > 0.33 ? "Positive" : moodAvg < -0.33 ? "Negative" : "Neutral";
     const moodColor = moodAvg > 0.33 ? "#3ddc97" : moodAvg < -0.33 ? "#ff6b6b" : "#d9b24f";
     const mix = { twitch: 0, kick: 0, youtube: 0, x: 0 };
     for (const e of win) if (mix[e.platform] != null) mix[e.platform]++;
     const mixTot = (mix.twitch + mix.kick + mix.youtube + mix.x) || 1;
-    const counts = {};
-    for (const e of win) counts[e.user] = (counts[e.user] || 0) + 1;
+    const counts = {}, userPlat = {};
+    for (const e of win) { counts[e.user] = (counts[e.user] || 0) + 1; userPlat[e.user] = e.platform; }
     const top = Object.entries(counts).sort((a, b) => b[1] - a[1]).slice(0, 5);
     const mixBar = ["twitch","kick","youtube","x"].map((p) => mix[p] ? `<span class="s-${p}" style="width:${(mix[p] / mixTot * 100).toFixed(1)}%"></span>` : "").join("");
     const legend = ["twitch","kick","youtube","x"].filter((p) => mix[p]).map((p) => `<span><i style="background:${platColor(p)}"></i>${LABEL[p]} ${Math.round(mix[p] / mixTot * 100)}%</span>`).join("");
-    const chatters = top.length ? `<ol class="chatters">${top.map((t, i) => `<li><span class="rk">${i + 1}</span><span class="nm">${esc(t[0])}</span><span class="ct">${t[1]}</span></li>`).join("")}</ol>` : `<div class="muted">Waiting for chat…</div>`;
+    const chatters = top.length ? `<ol class="chatters">${top.map((t, i) => `<li><span class="rk">${i + 1}</span><span class="cp p-${userPlat[t[0]]}">${ICON[userPlat[t[0]]] || ""}</span><span class="nm">${esc(t[0])}</span><span class="ct">${t[1]}</span></li>`).join("")}</ol>` : `<div class="muted">Waiting for chat…</div>`;
     el.innerHTML =
       `<div class="card mood"><p class="ctitle">Chat mood</p><div class="word" style="color:${moodColor}">${moodWord}</div>` +
         `<div class="bar"><span class="needle" style="left:${moodPct}%"></span></div>` +
-        `<div class="label"><span>Bearish</span><span>Bullish</span></div></div>` +
+        `<div class="label"><span>Negative</span><span>Positive</span></div></div>` +
       `<div class="card"><p class="ctitle">Messages / min</p><div class="big">${mpm}<small>msg/min</small></div></div>` +
       `<div class="card"><p class="ctitle">Platform mix</p><div class="mix">${mixBar}</div><div class="mixlegend">${legend || '<span class="muted">—</span>'}</div></div>` +
       `<div class="card"><p class="ctitle">Top chatters</p>${chatters}</div>`;
