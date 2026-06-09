@@ -1,0 +1,108 @@
+<!doctype html>
+<meta charset="utf-8" />
+<title>OmniChat overlay</title>
+<style>
+  :root { --fs: 20px; }
+  html, body { margin: 0; background: transparent; overflow: hidden;
+    font: 500 var(--fs)/1.35 "Inter", system-ui, -apple-system, sans-serif; }
+  #feed { position: fixed; left: 0; right: 0; bottom: 0; padding: 16px;
+    display: flex; flex-direction: column; gap: 10px; }
+  .row { display: flex; align-items: center; gap: 12px; padding: .5em .7em;
+    border: 1px solid rgba(255,255,255,0.06); border-radius: 12px;
+    max-width: 760px; animation: in .22s ease-out; transition: opacity .6s ease; }
+  .row.fade { opacity: 0; }
+  @keyframes in { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: none; } }
+
+  /* themes (driven by the control panel) */
+  body[data-theme="transparent"] .row { background: transparent; border-color: transparent; }
+  body[data-theme="dark"] .row { background: #0e0e10; }
+  body[data-theme="light"] .row { background: #f4f4f6; border-color: rgba(0,0,0,0.08); }
+  body[data-theme="light"] .text { color: #15171a; }
+
+  /* solid brand "platform" pills: icon + label, uniform width */
+  .pill { display: inline-flex; align-items: center; gap: .45em; flex: none;
+    padding: .32em .7em; border-radius: 9px; font-weight: 700; font-size: .72em;
+    letter-spacing: .02em; min-width: 5.2em; }
+  .pill svg { width: 1.15em; height: 1.15em; fill: currentColor; flex: none; }
+  .twitch  .pill { background: #9147ff; color: #fff; }
+  .kick    .pill { background: #53fc18; color: #08140a; }
+  .youtube .pill { background: #ff0000; color: #fff; }
+  .name { font-weight: 700; flex: none; }
+  .emote { height: 1.4em; vertical-align: middle; margin: -0.2em 0; }
+  .text { color: #efeff1; word-break: break-word; }
+</style>
+<div id="feed"></div>
+<script>
+  const LABEL = { twitch: "Twitch", kick: "Kick", youtube: "YouTube" };
+  // Official brand marks (Simple Icons, CC0). fill:currentColor -> inherits the pill's brand color.
+  const ICON = {
+    twitch: `<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M11.571 4.714h1.715v5.143H11.57zm4.715 0H18v5.143h-1.714zM6 0L1.714 4.286v15.428h5.143V24l4.286-4.286h3.428L22.286 12V0zm14.571 11.143l-3.428 3.428h-3.429l-3 3v-3H6.857V1.714h13.714Z"/></svg>`,
+    youtube: `<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M23.498 6.186a3.016 3.016 0 0 0-2.122-2.136C19.505 3.545 12 3.545 12 3.545s-7.505 0-9.377.505A3.017 3.017 0 0 0 .502 6.186C0 8.07 0 12 0 12s0 3.93.502 5.814a3.016 3.016 0 0 0 2.122 2.136c1.871.505 9.376.505 9.376.505s7.505 0 9.377-.505a3.015 3.015 0 0 0 2.122-2.136C24 15.93 24 12 24 12s0-3.93-.502-5.814zM9.545 15.568V8.432L15.818 12l-6.273 3.568z"/></svg>`,
+    kick: `<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M1.333 0h8v5.333H12V2.667h2.667V0h8v8H20v2.667h-2.667v2.666H20V16h2.667v8h-8v-2.667H12v-2.666H9.333V24h-8Z"/></svg>`,
+  };
+  // Fallback username tint per platform (used when chat doesn't send a per-user color).
+  const NAMECOLOR = { twitch: "#bf94ff", kick: "#53fc18", youtube: "#ff6d6d" };
+  const feed = document.getElementById("feed");
+  const esc = (s) => String(s).replace(/[<>&]/g, (c) => ({ "<":"&lt;", ">":"&gt;", "&":"&amp;" }[c]));
+  const escAttr = (s) => String(s).replace(/[<>&"]/g, (c) => ({ "<":"&lt;", ">":"&gt;", "&":"&amp;", '"':"&quot;" }[c]));
+  // Render a message body: emote fragments as <img>, text escaped. Falls back to plain text.
+  function body(m) {
+    if (Array.isArray(m.fragments) && m.fragments.length) {
+      return m.fragments.map((f) =>
+        f.type === "emote" && /^https:\/\//.test(f.url || "")
+          ? `<img class="emote" src="${escAttr(f.url)}" alt="${escAttr(f.name)}" title="${escAttr(f.name)}" loading="lazy">`
+          : esc(f.text || "")
+      ).join("");
+    }
+    return esc(m.text);
+  }
+  let settings = { theme: "transparent", fontSize: 20, maxMessages: 12,
+    showPlatform: { twitch: true, kick: true, youtube: true, x: false }, fadeSeconds: 0, slowMs: 0 };
+
+  function apply() {
+    document.documentElement.style.setProperty("--fs", settings.fontSize + "px");
+    document.body.dataset.theme = settings.theme;
+    while (feed.childElementCount > settings.maxMessages) feed.removeChild(feed.firstChild);
+  }
+
+  // Slow chat: paced release. Renders immediately when idle; spaces out a busy chat.
+  let omq = [], oPacing = false, oLast = 0;
+  function pumpOverlay() {
+    if (!omq.length) { oPacing = false; return; }
+    add(omq.shift());
+    oLast = Date.now();
+    setTimeout(pumpOverlay, Math.max(60, settings.slowMs || 60));
+  }
+  function feedOverlay(m) {
+    const slow = settings.slowMs || 0;
+    if (!slow) { add(m); return; }
+    omq.push(m);
+    if (omq.length > 60) omq.shift();
+    if (!oPacing) { oPacing = true; setTimeout(pumpOverlay, Math.max(0, slow - (Date.now() - oLast))); }
+  }
+
+  function add(m) {
+    if (settings.showPlatform && settings.showPlatform[m.platform] === false) return;
+    const row = document.createElement("div");
+    row.className = "row " + m.platform;
+    row.innerHTML =
+      `<span class="pill">${ICON[m.platform] || ""}${LABEL[m.platform] || m.platform}</span>` +
+      `<span class="name" style="color:${m.author.color || NAMECOLOR[m.platform] || "#cbb6ff"}">${esc(m.author.name)}</span>` +
+      `<span class="text">${body(m)}</span>`;
+    feed.appendChild(row);
+    while (feed.childElementCount > settings.maxMessages) feed.removeChild(feed.firstChild);
+    if (settings.fadeSeconds > 0) setTimeout(() => row.classList.add("fade"), settings.fadeSeconds * 1000);
+  }
+
+  function connect() {
+    const ws = new WebSocket(`ws://${location.host}`);
+    ws.onmessage = (e) => {
+      const d = JSON.parse(e.data);
+      if (d.settings) { settings = d.settings; apply(); }
+      if (d.kind === "message") feedOverlay(d.message);
+    };
+    ws.onclose = () => setTimeout(connect, 1000); // self-heal if the server restarts
+  }
+  apply();
+  connect();
+</script>

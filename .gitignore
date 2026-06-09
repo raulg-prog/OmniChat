@@ -1,0 +1,10 @@
+node_modules/
+dist/
+build/
+*.log
+.env
+.env.local
+.DS_Store
+
+# Runtime state written by the server (user's saved sources + overlay settings)
+apps/server/config.json
