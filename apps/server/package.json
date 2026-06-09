@@ -14,6 +14,7 @@
     "@sca/adapter-twitch": "workspace:*",
     "@sca/adapter-kick": "workspace:*",
     "@sca/adapter-youtube": "workspace:*",
+    "@sca/adapter-x": "workspace:*",
     "fastify": "^5.0.0",
     "ws": "^8.18.0"
   },

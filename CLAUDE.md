@@ -91,7 +91,8 @@ NOT Restream (cloud, only your own connected channels via OAuth).
   `parseStreamUrl` to route each URL to the right adapter.
 - Output is a transparent overlay served at `/`, loaded as an OBS Browser Source.
 
-## v1 scope: Twitch, Kick, YouTube. (X is parsed but skipped — see below.)
+## scope: Twitch, Kick, X = the main 3 (matches the contest brief "Twitch + X + Kick").
+## YouTube is an additive 4th. X is a labeled REPLAY (no public live-chat API); the rest are live.
 
 ## How each platform's chat is obtained (the part that bites people)
 - **Twitch** — DONE. Anonymous IRC over WebSocket (justinfan login, no token).
@@ -106,8 +107,11 @@ NOT Restream (cloud, only your own connected channels via OAuth).
   Unofficial/may break. Sanctioned alternative if you OWN the channel: Kick official API +
   webhooks (OAuth 2.1, docs.kick.com) — but webhooks need a public URL, so it's a poor fit
   for a local app; add a separate KickWebhookAdapter only if you run a server you control.
-- **X** — NO public API to READ live-stream chat. The RTMP key is broadcast-only.
-  Even AxelChat (30+ platforms) lists X as unsupported. Do not spend effort here.
+- **X** — no public API to READ live-stream chat (RTMP key is broadcast-only; scraping the
+  live page is fragile/ToS-breaking). Implemented as a labeled REPLAY (`adapter-x`): a
+  playback of representative messages onto the same bus, so X appears in the unified feed +
+  combined viewer count and is marked "replay" in the UI. Swap the body of `emit()` /
+  `getViewers()` for a real source if X ever ships a public chat-read API.
 
 ## Conventions
 - Secrets via `process.env` only; never hardcode; never commit `.env`.
@@ -148,5 +152,5 @@ NOT Restream (cloud, only your own connected channels via OAuth).
   driven live by settings broadcast over ws — never hardcode appearance in overlay.html.
 - "Live vs waiting" status is inferred from whether a channel has produced a message
   recently (panel tracks this client-side) — an offline or quiet channel shows "waiting".
-- Design intent: panel = broadcast-console aesthetic (Oswald + IBM Plex Mono, lime
-  on-air accent). Overlay = clean/legible over gameplay. Keep these distinct.
+- Design intent: panel = clean broadcast dashboard (Inter, warm dark-gray + orange
+  (Claude) accent, per-platform brand colors). Overlay = clean/legible over gameplay.

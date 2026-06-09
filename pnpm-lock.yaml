@@ -23,6 +23,9 @@ importers:
       '@sca/adapter-twitch':
         specifier: workspace:*
         version: link:../../packages/adapter-twitch
+      '@sca/adapter-x':
+        specifier: workspace:*
+        version: link:../../packages/adapter-x
       '@sca/adapter-youtube':
         specifier: workspace:*
         version: link:../../packages/adapter-youtube

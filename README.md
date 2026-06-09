@@ -41,7 +41,8 @@ Your sources and settings are saved to `apps/server/config.json` and restored ne
   video URL, `youtu.be/…`, `youtube.com/live/…`, `/shorts/…`, `/channel/UC…`, or an `@handle`.
 - **Kick** — working, no account. Clears Cloudflare on the chatroom-id lookup with a
   Chrome-impersonating TLS client (`impit`), then reads the open realtime Pusher websocket.
-- **X** — not supported (no public live-chat read API); URLs are rejected with a clear message.
+- **X** — **replay** source (no public live-chat read API). Paste an `x.com/<handle>` URL and
+  OmniChat plays representative chat through the same unified feed, clearly marked "replay".
 
 ## Layout
 ```

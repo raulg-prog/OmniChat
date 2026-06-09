@@ -4,6 +4,7 @@ import { ChatBus, parseStreamUrl, type ChatAdapter, type Platform } from "@sca/c
 import { TwitchAdapter } from "@sca/adapter-twitch";
 import { KickAdapter } from "@sca/adapter-kick";
 import { YouTubeAdapter } from "@sca/adapter-youtube";
+import { XAdapter } from "@sca/adapter-x";
 
 export interface OverlaySettings {
   theme: "transparent" | "dark" | "light";
@@ -26,7 +27,7 @@ const DEFAULTS: OverlaySettings = {
   theme: "transparent",
   fontSize: 20,
   maxMessages: 12,
-  showPlatform: { twitch: true, kick: true, youtube: true, x: false },
+  showPlatform: { twitch: true, kick: true, youtube: true, x: true },
   fadeSeconds: 0,
   slowMs: 0,
 };
@@ -90,14 +91,13 @@ export class ChannelManager {
       case "twitch":  return new TwitchAdapter({ channels: [channel] });
       case "kick":    return new KickAdapter({ channel });
       case "youtube": return new YouTubeAdapter({ channel });
-      case "x":       return null;
+      case "x":       return new XAdapter({ channel });
     }
   }
 
   async add(url: string): Promise<ManagedChannel> {
     const parsed = parseStreamUrl(url);
-    if (!parsed) throw new Error("Couldn't recognize that link. Paste a Twitch, Kick, or YouTube stream URL.");
-    if (parsed.platform === "x") throw new Error("X live chat can't be read through any public API, so it isn't supported.");
+    if (!parsed) throw new Error("Couldn't recognize that link. Paste a Twitch, Kick, X, or YouTube stream URL.");
     for (const e of this.entries.values()) {
       if (e.meta.platform === parsed.platform && e.meta.channel === parsed.channel) return e.meta;
     }

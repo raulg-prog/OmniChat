@@ -7,9 +7,9 @@
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
 <style>
   :root {
-    --bg: #0a0a0c; --surface: #141519; --surface-2: #1c1d23; --line: #272830; --line-2: #34353e;
-    --text: #ededf0; --muted: #8a8f99; --accent: #c6ff3a;
-    --twitch: #a970ff; --kick: #53fc18; --youtube: #ff4d4d;
+    --bg: #1c1a17; --surface: #25221f; --surface-2: #2e2a26; --line: #3a352e; --line-2: #49433a;
+    --text: #ece7df; --muted: #9c958a; --accent: #d97757;
+    --twitch: #a970ff; --kick: #53fc18; --youtube: #ff4d4d; --x: #e7e9ea;
     --font: "Inter", system-ui, -apple-system, Segoe UI, sans-serif;
   }
   * { box-sizing: border-box; }
@@ -26,17 +26,18 @@
   .logo i { width: 4px; height: 17px; border-radius: 2px; display: block; }
   .logo i:nth-child(1) { background: var(--twitch); }
   .logo i:nth-child(2) { background: var(--kick); }
-  .logo i:nth-child(3) { background: var(--youtube); }
+  .logo i:nth-child(3) { background: var(--x); }
+  .logo i:nth-child(4) { background: var(--youtube); }
   .brand h1 { font-size: 19px; font-weight: 700; letter-spacing: -.01em; margin: 0; line-height: 1; }
   .brand .sub { display: block; font-size: 11px; color: var(--muted); letter-spacing: .03em; margin-top: 3px; }
   .hstat { display: flex; align-items: center; gap: 10px; }
   .onair { display: inline-flex; align-items: center; gap: 8px; font-size: 11.5px; font-weight: 600;
     color: var(--muted); padding: 7px 14px; border: 1px solid var(--line); border-radius: 999px;
     text-transform: uppercase; letter-spacing: .07em; }
-  .onair.live { color: var(--accent); border-color: rgba(198,255,58,.28); }
+  .onair.live { color: var(--accent); border-color: rgba(217,119,87,.34); }
   .onair .led { width: 8px; height: 8px; border-radius: 50%; background: #3a3f47; }
   .onair.live .led { background: var(--accent); box-shadow: 0 0 9px var(--accent); animation: pulse 1.6s infinite; }
-  @keyframes pulse { 0%{box-shadow:0 0 0 0 rgba(198,255,58,.5)} 70%{box-shadow:0 0 0 6px rgba(198,255,58,0)} 100%{box-shadow:0 0 0 0 rgba(198,255,58,0)} }
+  @keyframes pulse { 0%{box-shadow:0 0 0 0 rgba(217,119,87,.5)} 70%{box-shadow:0 0 0 6px rgba(217,119,87,0)} 100%{box-shadow:0 0 0 0 rgba(217,119,87,0)} }
   .vtotal { display: inline-flex; align-items: baseline; gap: 6px; font-size: 11px; color: var(--muted);
     text-transform: uppercase; letter-spacing: .08em; padding: 7px 14px; border: 1px solid var(--line); border-radius: 999px; }
   .vtotal .vnum { font-size: 17px; font-weight: 700; color: var(--text); letter-spacing: 0; }
@@ -65,16 +66,17 @@
   .pf:hover { background: var(--surface); color: var(--text); }
   .pf.on { background: var(--surface); color: var(--text); border-color: var(--line-2); }
   .pf svg { width: 16px; height: 16px; flex: none; }
-  .pf.p-twitch svg { fill: var(--twitch); } .pf.p-kick svg { fill: var(--kick); } .pf.p-youtube svg { fill: var(--youtube); }
+  .pf.p-twitch svg { fill: var(--twitch); } .pf.p-kick svg { fill: var(--kick); } .pf.p-youtube svg { fill: var(--youtube); } .pf.p-x svg { fill: var(--x); }
   .pf .dot { width: 10px; height: 10px; border-radius: 50%; background: var(--muted); flex: none; }
   .pf .nm { flex: 1; }
   .pf b { font-weight: 700; font-variant-numeric: tabular-nums; color: var(--text); }
   .feed { flex: 1; min-width: 0; height: 100%; overflow-y: auto; padding: 10px 0 16px; }
   .feed.filter-twitch .msg:not(.p-twitch),
   .feed.filter-kick .msg:not(.p-kick),
+  .feed.filter-x .msg:not(.p-x),
   .feed.filter-youtube .msg:not(.p-youtube) { display: none; }
   .feed::-webkit-scrollbar { width: 10px; }
-  .feed::-webkit-scrollbar-thumb { background: #24252c; border-radius: 6px; border: 3px solid var(--bg); }
+  .feed::-webkit-scrollbar-thumb { background: #3a352e; border-radius: 6px; border: 3px solid var(--bg); }
   .msg { max-width: 860px; margin: 0 auto; padding: 8px 22px; line-height: 1.55; font-size: var(--feed-fs, 14.5px); animation: in .16s ease-out; }
   .msg:hover { background: rgba(255,255,255,.025); }
   @keyframes in { from { opacity: 0; transform: translateY(4px); } to { opacity: 1; transform: none; } }
@@ -82,10 +84,11 @@
     font-size: .92em; line-height: 1; margin-right: 10px; }
   .src .plat { font-weight: 600; display: inline-flex; align-items: center; gap: 5px; }
   .src .plat svg { width: 1.15em; height: 1.15em; fill: currentColor; }
-  .src .plat.twitch { color: var(--twitch); } .src .plat.kick { color: var(--kick); } .src .plat.youtube { color: var(--youtube); }
+  .src .plat.twitch { color: var(--twitch); } .src .plat.kick { color: var(--kick); } .src .plat.youtube { color: var(--youtube); } .src .plat.x { color: var(--x); }
   .src .chan { font-weight: 700; color: #fff; }
+  .src .rep { font-size: .72em; font-weight: 600; letter-spacing: .04em; color: var(--muted); margin-left: 6px; }
   .msg .user { font-weight: 700; margin-right: 8px; }
-  .msg .body { color: #d6d8dd; word-break: break-word; }
+  .msg .body { color: #d8d2c7; word-break: break-word; }
   .emote { height: 1.5em; vertical-align: middle; margin: -.3em 0; }
   .bdg { display: inline-flex; vertical-align: middle; margin-right: 3px; }
   .bdg svg { width: 1.05em; height: 1.05em; fill: currentColor; }
@@ -96,7 +99,7 @@
   .addrow input { flex: 1; font: inherit; font-size: 14px; color: var(--text); background: var(--surface);
     border: 1px solid var(--line); border-radius: 10px; padding: 12px 15px; transition: .15s; }
   .addrow input:focus { outline: none; border-color: var(--line-2); box-shadow: 0 0 0 3px rgba(255,255,255,.045); }
-  button.primary { font: inherit; font-weight: 600; font-size: 14px; background: var(--accent); color: #0c1400;
+  button.primary { font: inherit; font-weight: 600; font-size: 14px; background: var(--accent); color: #2a1206;
     border: none; border-radius: 10px; padding: 0 20px; cursor: pointer; transition: .15s; }
   button.primary:hover { filter: brightness(1.07); }
   .err { color: #ff6b6b; font-size: 13px; min-height: 18px; margin-bottom: 8px; }
@@ -106,7 +109,7 @@
   .chip { display: inline-flex; align-items: center; gap: 6px; flex: none; min-width: 92px; font-size: 12px;
     font-weight: 700; padding: 5px 11px; border-radius: 8px; color: #07080a; }
   .chip svg { width: 1.05em; height: 1.05em; fill: currentColor; }
-  .chip.twitch { background: var(--twitch); color: #fff; } .chip.kick { background: var(--kick); } .chip.youtube { background: var(--youtube); color: #fff; }
+  .chip.twitch { background: var(--twitch); color: #fff; } .chip.kick { background: var(--kick); } .chip.youtube { background: var(--youtube); color: #fff; } .chip.x { background: var(--x); color: #0a0a0a; }
   .chan .who { flex: 1; min-width: 0; }
   .chan .who .name { font-weight: 600; }
   .chan .who .stat { display: block; font-size: 11.5px; color: var(--muted); margin-top: 2px; }
@@ -141,13 +144,14 @@
   .tog.twitch.on { background: var(--twitch); color: #fff; border-color: var(--twitch); }
   .tog.kick.on { background: var(--kick); color: #07140a; border-color: var(--kick); }
   .tog.youtube.on { background: var(--youtube); color: #fff; border-color: var(--youtube); }
+  .tog.x.on { background: var(--x); color: #0a0a0a; border-color: var(--x); }
   .val { font-size: 13px; color: var(--accent); min-width: 46px; text-align: right; font-variant-numeric: tabular-nums; }
 </style>
 
 <header>
   <div class="brand">
-    <span class="logo" aria-hidden="true"><i></i><i></i><i></i></span>
-    <div><h1>OmniChat</h1><span class="sub">unified live chat</span></div>
+    <span class="logo" aria-hidden="true"><i></i><i></i><i></i><i></i></span>
+    <div><h1>OmniChat</h1><span class="sub">Twitch · Kick · X · YouTube</span></div>
   </div>
   <div class="hstat">
     <div class="onair" id="onair"><span class="led"></span><span id="onairtxt">Standby</span></div>
@@ -172,7 +176,7 @@
   <section class="view" data-view="resources" hidden>
     <div class="pad">
       <div class="addrow">
-        <input id="url" placeholder="Paste a Twitch, Kick, or YouTube stream URL…" autocomplete="off" />
+        <input id="url" placeholder="Paste a Twitch, Kick, X, or YouTube stream URL…" autocomplete="off" />
         <button class="primary" id="add">Add</button>
       </div>
       <div class="err" id="err"></div>
@@ -191,6 +195,7 @@
         <div class="toggles" id="toggles">
           <span class="tog twitch" data-p="twitch">Twitch</span>
           <span class="tog kick" data-p="kick">Kick</span>
+          <span class="tog x" data-p="x">X</span>
           <span class="tog youtube" data-p="youtube">YouTube</span>
         </div>
       </div>
@@ -212,12 +217,13 @@
 
 <script>
   const $ = (id) => document.getElementById(id);
-  const LABEL = { twitch: "Twitch", kick: "Kick", youtube: "YouTube" };
-  const NAMECOLOR = { twitch: "#bf94ff", kick: "#53fc18", youtube: "#ff7a7a" };
+  const LABEL = { twitch: "Twitch", kick: "Kick", youtube: "YouTube", x: "X" };
+  const NAMECOLOR = { twitch: "#bf94ff", kick: "#53fc18", youtube: "#ff7a7a", x: "#e7e9ea" };
   const ICON = {
     twitch: `<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M11.571 4.714h1.715v5.143H11.57zm4.715 0H18v5.143h-1.714zM6 0L1.714 4.286v15.428h5.143V24l4.286-4.286h3.428L22.286 12V0zm14.571 11.143l-3.428 3.428h-3.429l-3 3v-3H6.857V1.714h13.714Z"/></svg>`,
     youtube: `<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M23.498 6.186a3.016 3.016 0 0 0-2.122-2.136C19.505 3.545 12 3.545 12 3.545s-7.505 0-9.377.505A3.017 3.017 0 0 0 .502 6.186C0 8.07 0 12 0 12s0 3.93.502 5.814a3.016 3.016 0 0 0 2.122 2.136c1.871.505 9.376.505 9.376.505s7.505 0 9.377-.505a3.015 3.015 0 0 0 2.122-2.136C24 15.93 24 12 24 12s0-3.93-.502-5.814zM9.545 15.568V8.432L15.818 12l-6.273 3.568z"/></svg>`,
     kick: `<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M1.333 0h8v5.333H12V2.667h2.667V0h8v8H20v2.667h-2.667v2.666H20V16h2.667v8h-8v-2.667H12v-2.666H9.333V24h-8Z"/></svg>`,
+    x: `<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M18.901 1.153h3.68l-8.04 9.19L24 22.846h-7.406l-5.8-7.584-6.638 7.584H.474l8.6-9.83L0 1.154h7.594l5.243 6.932ZM17.61 20.644h2.039L6.486 3.24H4.298Z"/></svg>`,
   };
   // chat badges -> small tinted icons (mod/sub/vip/broadcaster/verified/member)
   const BADGE = (() => {
@@ -294,7 +300,7 @@
       return `<div class="chan">
         <span class="chip ${c.platform}">${ICON[c.platform] || ""}${LABEL[c.platform] || c.platform}</span>
         <span class="who"><span class="name">${esc(c.channel)}</span>
-          <span class="stat ${live ? "live" : ""}">${live ? "Live · receiving" : "Waiting for messages"}</span></span>
+          <span class="stat ${c.platform === "x" ? "" : live ? "live" : ""}">${c.platform === "x" ? "Replay · sample chat" : live ? "Live · receiving" : "Waiting for messages"}</span></span>
         <span class="vcount ${typeof viewers[c.id] === "number" ? "" : "off"}">${fmtViewers(viewers[c.id])}</span>
         <button class="rm" data-id="${c.id}">Remove</button>
       </div>`;
@@ -313,13 +319,13 @@
   // platform filter sidebar: per-platform viewer totals; click a platform to show only its chat
   let filter = null;
   function platformTotals() {
-    const t = { twitch:{has:false,sum:0,num:false}, kick:{has:false,sum:0,num:false}, youtube:{has:false,sum:0,num:false} };
+    const t = { twitch:{has:false,sum:0,num:false}, kick:{has:false,sum:0,num:false}, x:{has:false,sum:0,num:false}, youtube:{has:false,sum:0,num:false} };
     for (const c of channels) { const p = t[c.platform]; if (!p) continue; p.has = true; const v = viewers[c.id]; if (typeof v === "number") { p.sum += v; p.num = true; } }
     return t;
   }
   function renderFilters() {
     const t = platformTotals();
-    const plats = ["twitch","kick","youtube"].filter((p) => t[p].has);
+    const plats = ["twitch","kick","x","youtube"].filter((p) => t[p].has);
     const allSum = plats.reduce((s,p) => s + t[p].sum, 0), allNum = plats.some((p) => t[p].num);
     let html = `<button class="pf ${filter===null?"on":""}" data-p=""><span class="dot"></span><span class="nm">All</span><b>${allNum?allSum.toLocaleString():"—"}</b></button>`;
     for (const p of plats) html += `<button class="pf p-${p} ${filter===p?"on":""}" data-p="${p}">${ICON[p]}<span class="nm">${LABEL[p]}</span><b>${t[p].num?t[p].sum.toLocaleString():"—"}</b></button>`;
@@ -328,7 +334,7 @@
   }
   function setFilter(p) {
     filter = p;
-    feed.classList.remove("filter-twitch","filter-kick","filter-youtube");
+    feed.classList.remove("filter-twitch","filter-kick","filter-x","filter-youtube");
     if (p) feed.classList.add("filter-" + p);
     renderFilters();
   }
@@ -340,7 +346,7 @@
     row.className = "msg p-" + m.platform;
     const badges = (m.author.badges || []).map((b) => { const d = BADGE[b.type]; return d ? `<span class="bdg" style="color:${d.c}" title="${escAttr(b.label || b.type)}">${d.s}</span>` : ""; }).join("");
     row.innerHTML =
-      `<span class="src"><span class="plat ${m.platform}">${ICON[m.platform] || ""}${LABEL[m.platform] || m.platform}</span><span class="chan" title="${escAttr(m.channel)}">${esc(m.channel)}</span></span>` +
+      `<span class="src"><span class="plat ${m.platform}">${ICON[m.platform] || ""}${LABEL[m.platform] || m.platform}</span><span class="chan" title="${escAttr(m.channel)}">${esc(m.channel)}</span>${m.platform === "x" ? '<span class="rep">replay</span>' : ""}</span>` +
       badges +
       `<span class="user" style="color:${m.author.color || NAMECOLOR[m.platform] || "#cbb6ff"}">${esc(m.author.name)}</span>` +
       `<span class="body">${body(m)}</span>`;
