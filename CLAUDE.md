@@ -92,7 +92,8 @@ NOT Restream (cloud, only your own connected channels via OAuth).
 - Output is a transparent overlay served at `/`, loaded as an OBS Browser Source.
 
 ## scope: Twitch, Kick, X = the main 3 (matches the contest brief "Twitch + X + Kick").
-## YouTube is an additive 4th. X is a labeled REPLAY (no public live-chat API); the rest are live.
+## YouTube is an additive 4th. X is listed but has NO readable chat (no public API; no
+## fabricated messages); Twitch/Kick/YouTube are real live chat.
 
 ## How each platform's chat is obtained (the part that bites people)
 - **Twitch** — DONE. Anonymous IRC over WebSocket (justinfan login, no token).
@@ -108,10 +109,10 @@ NOT Restream (cloud, only your own connected channels via OAuth).
   webhooks (OAuth 2.1, docs.kick.com) — but webhooks need a public URL, so it's a poor fit
   for a local app; add a separate KickWebhookAdapter only if you run a server you control.
 - **X** — no public API to READ live-stream chat (RTMP key is broadcast-only; scraping the
-  live page is fragile/ToS-breaking). Implemented as a labeled REPLAY (`adapter-x`): a
-  playback of representative messages onto the same bus, so X appears in the unified feed +
-  combined viewer count and is marked "replay" in the UI. Swap the body of `emit()` /
-  `getViewers()` for a real source if X ever ships a public chat-read API.
+  live page is fragile/ToS-breaking). We deliberately do NOT fabricate messages: `adapter-x`
+  is a no-op. X stays in the lineup (x.com URLs are accepted and labeled; the card reads
+  "no public chat API"), but it produces no messages and no viewer count. Implement a real
+  source here if X ever ships a public chat-read API.
 
 ## Conventions
 - Secrets via `process.env` only; never hardcode; never commit `.env`.

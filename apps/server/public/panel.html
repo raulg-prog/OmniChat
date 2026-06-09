@@ -85,7 +85,6 @@
   .src .plat { font-weight: 600; display: inline-flex; align-items: center; gap: 5px; }
   .src .plat svg { width: 1.15em; height: 1.15em; fill: currentColor; }
   .src .plat.twitch { color: var(--twitch); } .src .plat.kick { color: var(--kick); } .src .plat.youtube { color: var(--youtube); } .src .plat.x { color: var(--x); }
-  .src .rep { font-size: .72em; font-weight: 600; letter-spacing: .04em; color: var(--muted); margin-left: 6px; }
   .msg .meta { position: absolute; right: 16px; top: 50%; transform: translateY(-50%); display: none;
     align-items: center; gap: 7px; font-size: 11.5px; color: var(--muted); font-variant-numeric: tabular-nums;
     background: var(--surface-2); border: 1px solid var(--line-2); border-radius: 7px; padding: 4px 10px;
@@ -95,7 +94,6 @@
   .msg .meta b { font-weight: 600; }
   .msg .meta .m-yes { color: #6fc27a; }
   .msg .meta .m-no { color: var(--muted); }
-  .msg .meta .m-rep { color: var(--accent); }
   .msg .user { font-weight: 700; margin-right: 8px; }
   .msg .body { color: #d8d2c7; word-break: break-word; }
   .emote { height: 1.5em; vertical-align: middle; margin: -.3em 0; }
@@ -309,7 +307,7 @@
       return `<div class="chan">
         <span class="chip ${c.platform}">${ICON[c.platform] || ""}${LABEL[c.platform] || c.platform}</span>
         <span class="who"><span class="name">${esc(c.channel)}</span>
-          <span class="stat ${c.platform === "x" ? "" : live ? "live" : ""}">${c.platform === "x" ? "Replay · sample chat" : live ? "Live · receiving" : "Waiting for messages"}</span></span>
+          <span class="stat ${c.platform === "x" ? "" : live ? "live" : ""}">${c.platform === "x" ? "No public chat API" : live ? "Live · receiving" : "Waiting for messages"}</span></span>
         <span class="vcount ${typeof viewers[c.id] === "number" ? "" : "off"}">${fmtViewers(viewers[c.id])}</span>
         <button class="rm" data-id="${c.id}">Remove</button>
       </div>`;
@@ -356,10 +354,9 @@
     const badges = (m.author.badges || []).map((b) => { const d = BADGE[b.type]; return d ? `<span class="bdg" style="color:${d.c}" title="${escAttr(b.label || b.type)}">${d.s}</span>` : ""; }).join("");
     const subbed = (m.author.badges || []).some((b) => b.type === "subscriber" || b.type === "founder" || b.type === "member");
     const time = new Date(m.timestamp || Date.now()).toLocaleTimeString([], { hour: "numeric", minute: "2-digit", second: "2-digit" });
-    const status = m.platform === "x" ? `<b class="m-rep">replay</b>`
-      : subbed ? `<b class="m-yes">Subscriber</b>` : `<b class="m-no">Not subscribed</b>`;
+    const status = subbed ? `<b class="m-yes">Subscriber</b>` : `<b class="m-no">Not subscribed</b>`;
     row.innerHTML =
-      `<span class="src"><span class="plat ${m.platform}">${ICON[m.platform] || ""}</span>${m.platform === "x" ? '<span class="rep">replay</span>' : ""}</span>` +
+      `<span class="src"><span class="plat ${m.platform}">${ICON[m.platform] || ""}</span></span>` +
       badges +
       `<span class="user" style="color:${m.author.color || NAMECOLOR[m.platform] || "#cbb6ff"}">${esc(m.author.name)}</span>` +
       `<span class="body">${body(m)}</span>` +
