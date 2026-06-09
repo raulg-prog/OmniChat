@@ -175,6 +175,41 @@
   .tog.youtube.on { background: var(--youtube); color: #fff; border-color: var(--youtube); }
   .tog.x.on { background: var(--x); color: #0a0a0a; border-color: var(--x); }
   .val { font-size: 13px; color: var(--accent); min-width: 46px; text-align: right; font-variant-numeric: tabular-nums; }
+
+  /* markets ticker */
+  .ticker { flex: none; display: flex; align-items: center; gap: 20px; overflow-x: auto; white-space: nowrap;
+    padding: 8px 18px; border-bottom: 1px solid var(--line); background: linear-gradient(180deg, var(--surface) 0%, var(--bg) 100%); }
+  .ticker::-webkit-scrollbar { display: none; }
+  .ticker .tklabel { font-size: 10px; text-transform: uppercase; letter-spacing: .14em; color: var(--muted); flex: none; padding-right: 16px; border-right: 1px solid var(--line); }
+  .ticker .tk { display: inline-flex; align-items: baseline; gap: 7px; font-size: 12.5px; font-variant-numeric: tabular-nums; flex: none; }
+  .ticker .tk .sym { font-weight: 700; letter-spacing: .02em; color: var(--text); }
+  .ticker .tk .px { color: var(--muted); }
+  .ticker .tk .ch { font-weight: 600; font-size: 11.5px; }
+  .ticker .tk .up { color: #3ddc97; } .ticker .tk .down { color: #ff6b6b; }
+
+  /* intelligence panel (Chat view, right) */
+  .intel { flex: none; width: 250px; border-left: 1px solid var(--line); padding: 14px; overflow-y: auto; display: flex; flex-direction: column; gap: 14px; }
+  .intel .card { background: var(--surface); border: 1px solid var(--line); border-radius: 12px; padding: 13px 14px; box-shadow: 0 1px 2px rgba(0,0,0,.2); }
+  .intel .ctitle { font-size: 10px; text-transform: uppercase; letter-spacing: .1em; color: var(--muted); margin: 0 0 9px; }
+  .intel .big { font-size: 26px; font-weight: 800; letter-spacing: -.02em; font-variant-numeric: tabular-nums; line-height: 1; }
+  .intel .big small { font-size: 12px; font-weight: 600; color: var(--muted); letter-spacing: 0; margin-left: 4px; }
+  .intel .muted { color: var(--muted); font-size: 12px; }
+  .mood .word { font-size: 20px; font-weight: 800; letter-spacing: -.01em; }
+  .mood .bar { position: relative; height: 8px; border-radius: 5px; margin-top: 10px; background: linear-gradient(90deg, #ff6b6b 0%, #d9b24f 50%, #3ddc97 100%); }
+  .mood .needle { position: absolute; top: -3px; width: 3px; height: 14px; border-radius: 2px; background: #fff; box-shadow: 0 0 6px rgba(0,0,0,.7); transform: translateX(-50%); transition: left .6s ease; }
+  .mood .label { display: flex; justify-content: space-between; font-size: 10px; margin-top: 7px; color: var(--muted); }
+  .mix { display: flex; height: 10px; border-radius: 5px; overflow: hidden; background: var(--surface-2); }
+  .mix span { display: block; height: 100%; }
+  .mix .s-twitch { background: var(--twitch); } .mix .s-kick { background: var(--kick); } .mix .s-youtube { background: var(--youtube); } .mix .s-x { background: var(--x); }
+  .mixlegend { display: flex; flex-wrap: wrap; gap: 7px 12px; margin-top: 10px; font-size: 11px; color: var(--muted); }
+  .mixlegend span { display: inline-flex; align-items: center; gap: 5px; }
+  .mixlegend i { width: 8px; height: 8px; border-radius: 2px; display: inline-block; }
+  .chatters { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 8px; }
+  .chatters li { display: flex; align-items: center; gap: 8px; font-size: 12.5px; }
+  .chatters .rk { width: 14px; color: var(--muted); font-size: 11px; font-variant-numeric: tabular-nums; }
+  .chatters .nm { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-weight: 600; }
+  .chatters .ct { color: var(--muted); font-variant-numeric: tabular-nums; }
+  .cashtag { color: var(--accent); font-weight: 700; background: rgba(79,227,180,.12); border-radius: 4px; padding: 0 3px; }
 </style>
 
 <header>
@@ -188,6 +223,8 @@
   </div>
 </header>
 
+<div class="ticker" id="ticker" aria-label="Live markets"></div>
+
 <nav class="tabs" id="tabs">
   <button class="tab active" data-tab="chat">Chat</button>
   <button class="tab" data-tab="watch">Watch</button>
@@ -200,6 +237,7 @@
     <div class="chatlayout">
       <aside class="pfilter" id="pfilter"></aside>
       <div class="feed" id="feed"></div>
+      <aside class="intel" id="intel"></aside>
     </div>
   </section>
 
@@ -281,14 +319,21 @@
   })();
   const esc = (s) => String(s).replace(/[<>&]/g, (c) => ({ "<":"&lt;", ">":"&gt;", "&":"&amp;" }[c]));
   const escAttr = (s) => String(s).replace(/[<>&"]/g, (c) => ({ "<":"&lt;", ">":"&gt;", "&":"&amp;", '"':"&quot;" }[c]));
+  function cashtags(t) {
+    return t.replace(/\$([A-Z]{2,6})\b/g, (full, sym) => {
+      const p = prices[sym];
+      const tip = p ? ` title="${escAttr(fmtPrice(p.usd) + " · " + (p.ch >= 0 ? "+" : "") + p.ch.toFixed(1) + "% 24h")}"` : "";
+      return `<span class="cashtag"${tip}>${full}</span>`;
+    });
+  }
   function body(m) {
     if (Array.isArray(m.fragments) && m.fragments.length) {
       return m.fragments.map((f) =>
         f.type === "emote" && /^https:\/\//.test(f.url || "")
           ? `<img class="emote" src="${escAttr(f.url)}" alt="${escAttr(f.name)}" title="${escAttr(f.name)}" loading="lazy">`
-          : esc(f.text || "")).join("");
+          : cashtags(esc(f.text || ""))).join("");
     }
-    return esc(m.text);
+    return cashtags(esc(m.text));
   }
   const obsUrl = `${location.protocol}//${location.host}/`;
   $("obsurl").textContent = obsUrl;
@@ -297,6 +342,8 @@
   let settings = null;
   const lastSeen = {};   // `${platform}:${channel}` -> ts (live status)
   const viewers = {};    // channel id -> live viewer count | null
+  const prices = {};     // SYM -> { usd, ch } (markets ticker; cashtags reference this)
+  const events = [];     // rolling chat events for the intelligence panel
 
   // ---- tabs ----
   $("tabs").addEventListener("click", (e) => {
@@ -442,11 +489,85 @@
   }
   function feedMsg(m) {
     lastSeen[`${m.platform}:${m.channel}`] = Date.now(); // real-time receipt for live status
+    recordStat(m); // feed the intelligence panel (counts every message, regardless of pacing/filter)
     const slow = (settings && settings.slowMs) || 0;
     if (!slow) { addMsg(m); return; }
     mq.push(m);
     if (mq.length > 60) mq.shift(); // cap backlog so it stays near real-time
     if (!pacing) { pacing = true; setTimeout(pump, Math.max(0, slow - (Date.now() - lastShown))); }
+  }
+
+  // ---- markets ticker (live crypto prices; cashtags reference these) ----
+  const COINS = [
+    { id: "bitcoin", sym: "BTC" }, { id: "ethereum", sym: "ETH" }, { id: "solana", sym: "SOL" },
+    { id: "dogecoin", sym: "DOGE" }, { id: "ripple", sym: "XRP" },
+  ];
+  function fmtPrice(n) {
+    if (n >= 1000) return "$" + Math.round(n).toLocaleString();
+    if (n >= 1) return "$" + n.toFixed(2);
+    return "$" + n.toFixed(4);
+  }
+  function renderTicker() {
+    const tk = $("ticker"); if (!tk) return;
+    const items = COINS.map((c) => {
+      const p = prices[c.sym]; if (!p) return "";
+      const cls = p.ch >= 0 ? "up" : "down", arrow = p.ch >= 0 ? "▲" : "▼";
+      return `<span class="tk"><span class="sym">${c.sym}</span><span class="px">${fmtPrice(p.usd)}</span><span class="ch ${cls}">${arrow}${Math.abs(p.ch).toFixed(1)}%</span></span>`;
+    }).filter(Boolean).join("");
+    tk.innerHTML = `<span class="tklabel">Markets</span>` + (items || `<span class="muted">markets unavailable</span>`);
+  }
+  async function fetchMarkets() {
+    try {
+      const ids = COINS.map((c) => c.id).join(",");
+      const r = await fetch(`https://api.coingecko.com/api/v3/simple/price?ids=${ids}&vs_currencies=usd&include_24hr_change=true`);
+      if (!r.ok) throw new Error("markets");
+      const d = await r.json();
+      for (const c of COINS) { const x = d[c.id]; if (x) prices[c.sym] = { usd: x.usd, ch: x.usd_24h_change || 0 }; }
+    } catch { /* keep whatever we have; ticker degrades gracefully */ }
+    renderTicker();
+  }
+
+  // ---- chat intelligence: rolling stats + mood over the real chat ----
+  const POS = ["lol","lmao","lmfao","lul","lulw","kekw","w","gg","ggs","pog","poggers","hype","based","fire","goated","goat","ez","clean","love","insane","letsgo","bullish","pump","green","gm","wagmi","huge","king","up","nice","cracked","dub"];
+  const NEG = ["trash","boring","mid","cringe","ratio","rug","dump","red","bearish","down","rip","sad","worst","bad","scam","ngmi","yikes","cope","l","ls","ew","washed"];
+  function scoreMood(text) {
+    let s = 0;
+    for (const w of String(text).toLowerCase().split(/[^a-z]+/)) { if (!w) continue; if (POS.includes(w)) s++; else if (NEG.includes(w)) s--; }
+    return s > 0 ? 1 : s < 0 ? -1 : 0;
+  }
+  function recordStat(m) {
+    events.push({ t: Date.now(), platform: m.platform, user: m.author.name, mood: scoreMood(m.text) });
+    const cut = Date.now() - 180000;
+    while (events.length && events[0].t < cut) events.shift();
+  }
+  function platColor(p) { return p === "twitch" ? "var(--twitch)" : p === "kick" ? "var(--kick)" : p === "youtube" ? "var(--youtube)" : "var(--x)"; }
+  function renderIntel() {
+    const el = $("intel"); if (!el) return;
+    const now = Date.now();
+    const mpm = events.filter((e) => e.t > now - 60000).length;
+    const win = events.filter((e) => e.t > now - 120000);
+    let mSum = 0, mN = 0;
+    for (const e of win) if (e.mood !== 0) { mSum += e.mood; mN++; }
+    const moodAvg = mN ? mSum / mN : 0;
+    const moodPct = Math.round((moodAvg + 1) * 50);
+    const moodWord = moodAvg > 0.33 ? "Bullish" : moodAvg < -0.33 ? "Bearish" : "Neutral";
+    const moodColor = moodAvg > 0.33 ? "#3ddc97" : moodAvg < -0.33 ? "#ff6b6b" : "#d9b24f";
+    const mix = { twitch: 0, kick: 0, youtube: 0, x: 0 };
+    for (const e of win) if (mix[e.platform] != null) mix[e.platform]++;
+    const mixTot = (mix.twitch + mix.kick + mix.youtube + mix.x) || 1;
+    const counts = {};
+    for (const e of win) counts[e.user] = (counts[e.user] || 0) + 1;
+    const top = Object.entries(counts).sort((a, b) => b[1] - a[1]).slice(0, 5);
+    const mixBar = ["twitch","kick","youtube","x"].map((p) => mix[p] ? `<span class="s-${p}" style="width:${(mix[p] / mixTot * 100).toFixed(1)}%"></span>` : "").join("");
+    const legend = ["twitch","kick","youtube","x"].filter((p) => mix[p]).map((p) => `<span><i style="background:${platColor(p)}"></i>${LABEL[p]} ${Math.round(mix[p] / mixTot * 100)}%</span>`).join("");
+    const chatters = top.length ? `<ol class="chatters">${top.map((t, i) => `<li><span class="rk">${i + 1}</span><span class="nm">${esc(t[0])}</span><span class="ct">${t[1]}</span></li>`).join("")}</ol>` : `<div class="muted">Waiting for chat…</div>`;
+    el.innerHTML =
+      `<div class="card mood"><p class="ctitle">Chat mood</p><div class="word" style="color:${moodColor}">${moodWord}</div>` +
+        `<div class="bar"><span class="needle" style="left:${moodPct}%"></span></div>` +
+        `<div class="label"><span>Bearish</span><span>Bullish</span></div></div>` +
+      `<div class="card"><p class="ctitle">Messages / min</p><div class="big">${mpm}<small>msg/min</small></div></div>` +
+      `<div class="card"><p class="ctitle">Platform mix</p><div class="mix">${mixBar}</div><div class="mixlegend">${legend || '<span class="muted">—</span>'}</div></div>` +
+      `<div class="card"><p class="ctitle">Top chatters</p>${chatters}</div>`;
   }
 
   // ---- settings (Appearance) ----
@@ -495,5 +616,7 @@
     bindSettings(); reflectSettings(); renderChannels(); renderFilters();
     connect();
     setInterval(renderChannels, 5000);
+    fetchMarkets(); setInterval(fetchMarkets, 60000);
+    renderIntel(); setInterval(renderIntel, 1500);
   })();
 </script>
