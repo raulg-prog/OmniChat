@@ -153,5 +153,5 @@ NOT Restream (cloud, only your own connected channels via OAuth).
   driven live by settings broadcast over ws — never hardcode appearance in overlay.html.
 - "Live vs waiting" status is inferred from whether a channel has produced a message
   recently (panel tracks this client-side) — an offline or quiet channel shows "waiting".
-- Design intent: panel = clean broadcast dashboard (Inter, warm dark-gray + orange
-  (Claude) accent, per-platform brand colors). Overlay = clean/legible over gameplay.
+- Design intent: panel = clean broadcast dashboard (Inter, cool dark-gray + mint accent,
+  per-platform brand colors). Overlay = clean/legible over gameplay.
