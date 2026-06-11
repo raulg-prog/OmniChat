@@ -8,3 +8,5 @@ build/
 
 # Runtime state written by the server (user's saved sources + overlay settings)
 apps/server/config.json
+# Admin's persisted x.com login session for Connect X (NEVER commit)
+apps/server/.x-userdata/

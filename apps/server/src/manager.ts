@@ -5,6 +5,7 @@ import { TwitchAdapter } from "@sca/adapter-twitch";
 import { KickAdapter } from "@sca/adapter-kick";
 import { YouTubeAdapter } from "@sca/adapter-youtube";
 import { XAdapter } from "@sca/adapter-x";
+import { isXConnected, mintXToken } from "./x-session.js";
 
 export interface OverlaySettings {
   theme: "transparent" | "dark" | "light";
@@ -86,22 +87,29 @@ export class ChannelManager {
     );
   }
 
-  private build(platform: Platform, channel: string): ChatAdapter | null {
+  private build(platform: Platform, channel: string, x?: { accessToken?: string; getToken?: () => Promise<{ accessToken: string; endpoint?: string } | null> }): ChatAdapter | null {
     switch (platform) {
       case "twitch":  return new TwitchAdapter({ channels: [channel] });
       case "kick":    return new KickAdapter({ channel });
       case "youtube": return new YouTubeAdapter({ channel });
-      case "x":       return new XAdapter({ channel });
+      case "x":       return new XAdapter({ broadcastId: channel, accessToken: x?.accessToken, getToken: x?.getToken });
     }
   }
 
-  async add(url: string): Promise<ManagedChannel> {
+  async add(url: string, token?: string): Promise<ManagedChannel> {
     const parsed = parseStreamUrl(url);
     if (!parsed) throw new Error("Couldn't recognize that link. Paste a Twitch, Kick, X, or YouTube stream URL.");
+    let xOpts: { accessToken?: string; getToken?: () => Promise<{ accessToken: string; endpoint?: string } | null> } | undefined;
+    if (parsed.platform === "x") {
+      const room = parsed.channel;
+      if (token) xOpts = { accessToken: token };
+      else if (isXConnected()) xOpts = { getToken: () => mintXToken(room) };
+      else throw new Error("Connect X first (one-time login), or paste a broadcast access token.");
+    }
     for (const e of this.entries.values()) {
       if (e.meta.platform === parsed.platform && e.meta.channel === parsed.channel) return e.meta;
     }
-    const adapter = this.build(parsed.platform, parsed.channel);
+    const adapter = this.build(parsed.platform, parsed.channel, xOpts);
     if (!adapter) throw new Error(`${parsed.platform} isn't supported yet.`);
     const meta: ManagedChannel = {
       id: randomUUID(), url, platform: parsed.platform, channel: parsed.channel, addedAt: Date.now(),
@@ -137,7 +145,8 @@ export class ChannelManager {
   }
 
   async save(): Promise<void> {
-    const data = { channels: this.list().map((c) => ({ url: c.url })), settings: this.settings };
+    // X channels are token-bound and ephemeral, so they are not persisted (re-add each session).
+    const data = { channels: this.list().filter((c) => c.platform !== "x").map((c) => ({ url: c.url })), settings: this.settings };
     await writeFile(this.configPath, JSON.stringify(data, null, 2), "utf8").catch(() => {});
   }
 

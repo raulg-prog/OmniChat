@@ -4,6 +4,7 @@ import { fileURLToPath } from "node:url";
 import { readFile } from "node:fs/promises";
 import { ChatBus } from "@sca/core";
 import { ChannelManager, type OverlaySettings } from "./manager.js";
+import { connectX, isXConnected } from "./x-session.js";
 
 const PORT = Number(process.env.PORT ?? 8787);
 const CONFIG = fileURLToPath(new URL("../config.json", import.meta.url));
@@ -31,16 +32,19 @@ async function serve(reply: any, rel: string) {
   return reply.send(await readFile(page(rel), "utf8"));
 }
 
-app.get("/", (_req, reply) => serve(reply, "../public/overlay.html"));
+app.get("/", (_req, reply) => serve(reply, "../public/landing.html"));
+app.get("/overlay", (_req, reply) => serve(reply, "../public/overlay.html"));
 app.get("/panel", (_req, reply) => serve(reply, "../public/panel.html"));
+app.get("/live", (_req, reply) => serve(reply, "../public/viewer.html"));
+app.get("/landing", (_req, reply) => serve(reply, "../public/landing.html"));
 
 app.get("/api/state", async () => ({ channels: manager.list(), settings: manager.settings }));
 
 app.post("/api/channels", async (req, reply) => {
-  const { url } = (req.body ?? {}) as { url?: string };
+  const { url, token } = (req.body ?? {}) as { url?: string; token?: string };
   if (!url) return reply.code(400).send({ error: "Paste a stream URL first." });
   try {
-    const channel = await manager.add(url);
+    const channel = await manager.add(url, token);
     void broadcastViewers(); // refresh counts so the new stream shows its viewers promptly
     return { channel };
   } catch (e) { return reply.code(400).send({ error: (e as Error).message }); }
@@ -54,6 +58,13 @@ app.delete("/api/channels/:id", async (req) => {
 app.put("/api/settings", async (req) => ({
   settings: await manager.updateSettings((req.body ?? {}) as Partial<OverlaySettings>),
 }));
+
+let xConnecting = false;
+app.post("/api/x/connect", async () => {
+  if (!xConnecting) { xConnecting = true; void connectX().finally(() => { xConnecting = false; }); }
+  return { started: true };
+});
+app.get("/api/x/status", async () => ({ connected: isXConnected(), connecting: xConnecting }));
 
 try {
   await app.listen({ port: PORT, host: "0.0.0.0" });

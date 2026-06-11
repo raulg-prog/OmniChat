@@ -45,6 +45,8 @@ export function parseStreamUrl(input: string): ParsedStream | null {
     return null;
   }
   if (host.endsWith("x.com") || host.endsWith("twitter.com")) {
+    // x.com/i/broadcasts/<broadcastId> is a live broadcast; that id is the chat room.
+    if (seg[0] === "i" && seg[1] === "broadcasts" && seg[2]) return { platform: "x", channel: seg[2] };
     return seg[0] ? { platform: "x", channel: seg[0] } : null;
   }
   return null;
