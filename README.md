@@ -1,75 +1,81 @@
 # OmniChat
 
-A **free, local** app that merges live chat from Twitch, Kick, and YouTube into one
-feed — with a point-and-click **control panel** and a transparent **OBS overlay**.
-(Project/package scope stays `@sca/*`; "OmniChat" is the product name.)
+**One feed. Every audience.** A real-time chat aggregator that unifies live chat from
+**Twitch, Kick, X, and YouTube** into a single, source-labeled, color-coded stream — plus a
+public watch page and live audience intelligence. Built in the *Market Bubble* house style
+for the $10,000 Vibe Code Challenge.
 
-- **Free:** every default path (Twitch IRC, YouTube InnerTube, Kick websocket) needs
-  no paid API and no account. It runs entirely on your machine.
-- **Easy:** no config files. Open the panel, paste a stream URL, click Add, copy the
-  OBS link. Add/remove channels and restyle the overlay live — no restarts.
-- **Rich:** the overlay shows native Twitch/Kick/YouTube emotes — plus **BTTV & 7TV** —
-  as images (not text), behind solid brand pills per platform.
+> Most aggregators fake X with a "replay." OmniChat reads **real** X broadcast chat.
 
-## For streamers — no install needed (Windows)
-Don't want to touch a terminal? Use the prebuilt app:
-1. Download **`ChatAggregator-win-x64.zip`** and unzip it anywhere.
-2. Double-click **`Start OmniChat.cmd`**. Your browser opens the control panel automatically.
-3. Paste a Twitch or YouTube stream URL → **Add**. In **OBS**, add a **Browser Source** pointing at `http://localhost:8787/`.
-4. Keep the little black window open while you stream; close it to stop.
+## Three surfaces
 
-No Node, no account, no API keys — it bundles its own runtime and runs entirely on your PC.
+| Page | URL | Who it's for |
+|------|-----|--------------|
+| **Landing** | `/` | The front door — what it is, animated live demo |
+| **Tool** | `/panel` | The operator's control room: add streams, combined chat, audience analytics (mood, msgs/min, platform mix, top chatters), slow-chat, search |
+| **Viewer** | `/live` | The public watch page: every stream in a grid (click one to focus) with the combined chat docked alongside |
+| OBS overlay | `/overlay` | Optional transparent overlay for an OBS Browser Source |
 
-## Run from source (developers)
+## Quick start
+
+**You need [Node.js](https://nodejs.org/en/download) (LTS) + pnpm** (`npm install -g pnpm`).
+
+### One-click
+- **Windows:** double-click **`Start OmniChat.cmd`**
+- **macOS / Linux:** double-click **`start-omnichat.command`** (first time: right-click → Open; or `chmod +x start-omnichat.command`)
+
+It installs dependencies on first run, frees the port, starts the server, and opens
+`http://localhost:8787` in your browser.
+
+### Or from a terminal
 ```bash
 pnpm install
-pnpm dev          # dev mode (live reload)
-pnpm serve        # production mode: builds, then runs the lean dist (~70 MB RAM)
-pnpm package:win  # build the no-install Windows app -> build/ChatAggregator-win-x64.zip
+pnpm start        # builds packages, then serves on http://localhost:8787
 ```
-Then:
-1. Open the **control panel**: http://localhost:8787/panel
-2. Paste a stream URL (e.g. `twitch.tv/xqc`) and click **Add**.
-3. In **OBS**: add a **Browser Source** → URL `http://localhost:8787/` (the Copy button in the panel copies it).
-4. Style the overlay from the panel — theme, font size, message count, per-platform toggles. Changes apply instantly.
 
-Your sources and settings are saved to `apps/server/config.json` and restored next launch.
+## Adding streams
 
-## Platforms (v1)
-- **Twitch** — working out of the box (anonymous IRC, no token).
-- **YouTube** — working, no API key (InnerTube via the `youtube-chat` lib). Paste a
-  video URL, `youtu.be/…`, `youtube.com/live/…`, `/shorts/…`, `/channel/UC…`, or an `@handle`.
-- **Kick** — working, no account. Clears Cloudflare on the chatroom-id lookup with a
-  Chrome-impersonating TLS client (`impit`), then reads the open realtime Pusher websocket.
-- **X** — **listed, but no readable chat.** X has no public live-chat read API, and we don't
-  fabricate messages. `x.com/<handle>` URLs are accepted and labeled in the lineup; the card
-  reads "no public chat API". (Twitch/Kick/YouTube are real live chat.)
+In the **Tool** (`/panel`) → **Resources**, paste any of these and click **Add**:
 
-## Layout
-```
-core                ChatMessage, ChatBus, ChatAdapter, parseStreamUrl()
-adapter-*           one per platform (URL/name in → normalized message out)
-server/             ChannelManager (runtime add/remove + JSON persistence),
-                    REST API, ws fan-out, serves panel + overlay
-server/public/      panel.html (control panel) · overlay.html (OBS source)
-```
-See `CLAUDE.md` for conventions when extending with Claude Code.
+- `twitch.tv/<channel>` — **no login** (anonymous IRC)
+- `kick.com/<channel>` — **no login** (public realtime socket)
+- `youtube.com/watch?v=<id>` / `youtu.be/<id>` / `@handle` — **no login** (InnerTube)
+- `x.com/i/broadcasts/<id>` — needs a one-time **Connect X** (see below)
 
-## Honest caveats
-The YouTube and Kick default paths use unofficial endpoints (same as AxelChat). They're
-free and need no account, but can break when those platforms change internals — expect
-occasional maintenance. Twitch's path is stable.
+Twitch, Kick, and YouTube need **zero accounts or API keys**.
 
-**Kick specifically:** the channel→chatroom-id lookup sits behind Cloudflare bot
-protection that returns **HTTP 403** to ordinary HTTP clients — it keys on the request's
-TLS fingerprint, not the IP, so even a real home connection is blocked. We clear it with
-[`impit`](https://www.npmjs.com/package/impit), which impersonates Chrome's TLS handshake
-(verified working live and in the packaged app); the chat websocket itself is open. Because
-this is an unofficial path, a future Cloudflare change could need a maintenance bump. The
-sanctioned alternative — Kick's official OAuth API — delivers chat via webhooks that need a
-public callback URL, which doesn't fit a local app, so we don't use it.
+## Connecting X (only for X chat)
 
-## Testing
-```bash
-pnpm test     # unit tests for parseStreamUrl + the Twitch/Kick normalizers (offline, no network)
-```
+X has no anonymous way to read a live broadcast's chat, so the **operator connects an X
+account once** and the server mints/refreshes chat tokens from that session. Public viewers
+never log in — they just watch.
+
+1. One-time on the host: `pnpm --filter @sca/server exec playwright install chromium`
+2. In **Resources** → **Connect X** → log in to x.com in the window that opens (your
+   password is typed into real x.com; we only persist the session locally, gitignored).
+3. Add any `x.com/i/broadcasts/<id>` — the token is minted automatically and auto-refreshes.
+
+*(No login? You can also paste a broadcast `access_token` manually — Connect X just automates it.)*
+
+## How the chat is read
+
+| Platform | Method | Account? |
+|----------|--------|----------|
+| Twitch | Anonymous IRC-over-WebSocket | No |
+| Kick | Realtime (Pusher) socket; Cloudflare cleared via TLS impersonation | No |
+| YouTube | InnerTube live-chat continuation | No |
+| X | Periscope "chatman" websocket via a server-held x.com session | Operator, once |
+
+## Tech
+
+- TypeScript · ESM · pnpm workspaces · Fastify + `ws`
+- `packages/core` (message contract) · `adapter-*` (one per platform) · `@sca/emotes` (BTTV/7TV)
+- `apps/server` — runtime channel manager, REST + websocket fan-out, serves the pages
+- X session handled by Playwright (server-side only)
+
+## Notes
+
+- Unofficial endpoints (YouTube InnerTube, Kick socket, X chatman) can change — they're free
+  and need no account, but may need occasional maintenance.
+- The X session lives in `apps/server/.x-userdata/` and is **never committed**.
+- Your added streams + settings persist to `apps/server/config.json` (also gitignored).
