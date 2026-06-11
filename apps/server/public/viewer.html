@@ -1,0 +1,241 @@
+<!doctype html>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>OmniChat — Live</title>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,400;0,9..144,500;0,9..144,600;1,9..144,400&family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
+<style>
+  :root {
+    --bg: #08090c; --surface: #0f1116; --surface-2: #151921; --line: #20242e; --line-2: #303744;
+    --text: #eef1f6; --muted: #8a93a3; --accent: #f4f6fb;
+    --twitch: #a970ff; --kick: #53fc18; --youtube: #ff4d4d; --x: #e7e9ea;
+    --font: "Inter", system-ui, -apple-system, Segoe UI, sans-serif;
+  }
+  * { box-sizing: border-box; }
+  html, body { height: 100%; margin: 0; }
+  body { display: flex; flex-direction: column; background:
+    radial-gradient(1100px 480px at 50% -200px, rgba(255,255,255,.05), transparent 70%), var(--bg);
+    color: var(--text); font-family: var(--font); font-size: 14px; -webkit-font-smoothing: antialiased; }
+
+  header { flex: none; display: flex; align-items: center; justify-content: space-between; gap: 20px;
+    width: 100%; max-width: 1500px; margin: 0 auto; padding: 16px 24px; }
+  .brand { display: flex; align-items: center; gap: 12px; }
+  .logo { display: inline-flex; gap: 3px; padding: 7px 8px; border-radius: 9px; background: var(--surface-2); border: 1px solid var(--line); }
+  .logo i { width: 4px; height: 17px; border-radius: 2px; display: block; }
+  .logo i:nth-child(1){background:var(--twitch)} .logo i:nth-child(2){background:var(--kick)}
+  .logo i:nth-child(3){background:var(--x)} .logo i:nth-child(4){background:var(--youtube)}
+  .brand h1 { font-size: 20px; font-weight: 700; letter-spacing: -.01em; margin: 0; line-height: 1; }
+  .brand .sub { display: block; font-size: 11px; color: var(--muted); letter-spacing: .03em; margin-top: 3px; }
+  .hstat { display: flex; align-items: center; gap: 10px; }
+  .onair { display: inline-flex; align-items: center; gap: 8px; font-size: 11.5px; font-weight: 600; color: var(--muted);
+    padding: 7px 14px; border: 1px solid var(--line); border-radius: 999px; text-transform: uppercase; letter-spacing: .07em; }
+  .onair.live { color: var(--accent); border-color: rgba(244,246,251,.3); }
+  .onair .led { width: 8px; height: 8px; border-radius: 50%; background: #3a3f47; }
+  .onair.live .led { background: var(--accent); box-shadow: 0 0 9px var(--accent); animation: pulse 1.6s infinite; }
+  @keyframes pulse { 0%{box-shadow:0 0 0 0 rgba(255,255,255,.45)} 70%{box-shadow:0 0 0 6px rgba(255,255,255,0)} 100%{box-shadow:0 0 0 0 rgba(255,255,255,0)} }
+  .vtotal { display: inline-flex; align-items: baseline; gap: 6px; font-size: 11px; color: var(--muted);
+    text-transform: uppercase; letter-spacing: .08em; padding: 7px 14px; border: 1px solid var(--line); border-radius: 999px; }
+  .vtotal .vnum { font-size: 17px; font-weight: 700; color: var(--text); letter-spacing: 0; }
+
+  main { flex: 1; min-height: 0; width: 100%; max-width: 1500px; margin: 0 auto; padding: 0 24px 22px;
+    display: flex; gap: 18px; }
+
+  /* combined chat (left) */
+  .chat { flex: none; width: 360px; display: flex; flex-direction: column; min-height: 0;
+    background: var(--surface); border: 1px solid var(--line); border-radius: 16px; overflow: hidden; }
+  .chat .head { flex: none; padding: 13px 16px; border-bottom: 1px solid var(--line); font-size: 11px;
+    text-transform: uppercase; letter-spacing: .1em; color: var(--muted); }
+  .feed { flex: 1; min-height: 0; overflow-y: auto; padding: 8px 0; }
+  .feed::-webkit-scrollbar { width: 9px; }
+  .feed::-webkit-scrollbar-thumb { background: var(--line); border-radius: 6px; border: 3px solid var(--surface); }
+  .msg { padding: 6px 15px; line-height: 1.5; font-size: 14px; animation: in .16s ease-out; }
+  @keyframes in { from { opacity: 0; transform: translateY(4px); } to { opacity: 1; transform: none; } }
+  .src { display: inline-flex; vertical-align: middle; margin-right: 7px; }
+  .src svg { width: 14px; height: 14px; }
+  .src.twitch{color:var(--twitch)} .src.kick{color:var(--kick)} .src.youtube{color:var(--youtube)} .src.x{color:var(--x)}
+  .src svg { fill: currentColor; }
+  .bdg { display: inline-flex; vertical-align: middle; margin-right: 3px; }
+  .bdg svg { width: 1.02em; height: 1.02em; fill: currentColor; }
+  .user { font-weight: 700; margin-right: 7px; }
+  .text { color: #d3d7de; word-break: break-word; }
+  .emote { height: 1.4em; vertical-align: middle; margin: -.3em 0; }
+  .feed .empty { color: var(--muted); padding: 36px 16px; font-size: 13px; }
+
+  /* streams (right) */
+  .stage { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 12px; }
+  .streams { flex: 1; min-height: 0; display: flex; flex-wrap: wrap; gap: 12px; align-content: flex-start; overflow-y: auto; }
+  .stream { position: relative; flex: 1 1 calc(50% - 6px); aspect-ratio: 16/9; min-width: 280px;
+    background: #000; border: 1px solid var(--line); border-radius: 14px; overflow: hidden; cursor: pointer;
+    box-shadow: 0 2px 12px rgba(0,0,0,.3); transition: flex-basis .25s ease; }
+  .stream iframe { position: absolute; inset: 0; width: 100%; height: 100%; border: 0; }
+  /* .ov is an invisible click-catcher that intercepts the focus click; the active (focused)
+     stream omits it so the real player controls (pause/volume/fullscreen) work normally. */
+  .stream .ov { position: absolute; inset: 0; z-index: 2; cursor: pointer; }
+  .stream .slabel { position: absolute; left: 10px; top: 10px; z-index: 3; display: inline-flex; align-items: center; gap: 6px;
+    font-size: 12px; font-weight: 700; padding: 4px 9px; border-radius: 7px; background: rgba(8,10,14,.7); color: #fff; pointer-events: none; }
+  .stream .slabel svg { width: 1.05em; height: 1.05em; fill: currentColor; }
+  .stream .exit { position: absolute; right: 10px; top: 10px; z-index: 4; font: inherit; font-size: 12px; font-weight: 600;
+    color: #fff; background: rgba(8,10,14,.72); border: 1px solid rgba(255,255,255,.18); border-radius: 8px;
+    padding: 5px 11px; cursor: pointer; }
+  .stream .exit:hover { border-color: var(--accent); color: var(--accent); }
+  .stream.note { display: flex; align-items: center; justify-content: center; color: var(--muted); font-size: 13px; text-align: center;
+    background: var(--surface); cursor: default; }
+  .stream.note a { color: var(--accent); }
+  /* focus mode: clicked stream goes full, others shrink to a thumbnail strip */
+  .streams.focused .stream { flex: 0 0 120px; aspect-ratio: 16/9; }
+  .streams.focused .stream.active { flex: 1 1 100%; aspect-ratio: 16/9; order: -1; }
+  .streams .empty { flex: 1; display: flex; align-items: center; justify-content: center; color: var(--muted); font-size: 13px; }
+
+  /* ===== Market Bubble noir re-skin — matches /landing ===== */
+  :root{
+    --bg:#0b0a08; --surface:#15120d; --surface-2:#1d1810; --line:#2a241b; --line-2:#3a3225;
+    --text:#ece6d8; --muted:#9b9384; --accent:#c9a86a; --gold-2:#e3c98f;
+  }
+  @keyframes pulse{0%{box-shadow:0 0 0 0 rgba(201,168,106,.5)}70%{box-shadow:0 0 0 6px rgba(201,168,106,0)}100%{box-shadow:0 0 0 0 rgba(201,168,106,0)}}
+  body{background:
+    radial-gradient(1100px 620px at 80% -12%, rgba(201,168,106,.12), transparent 60%),
+    radial-gradient(820px 640px at -4% 0%, rgba(169,112,255,.07), transparent 56%),
+    radial-gradient(900px 820px at 50% 120%, rgba(83,252,24,.04), transparent 60%),
+    linear-gradient(180deg,#0b0a08,#100e0b 55%,#0b0a08)}
+  body::before{content:"";position:fixed;inset:0;z-index:9998;pointer-events:none;opacity:.04;mix-blend-mode:soft-light;
+    background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='220' height='220'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.9' numOctaves='3'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E")}
+  body::after{content:"";position:fixed;inset:0;z-index:9997;pointer-events:none;box-shadow:inset 0 0 200px 44px rgba(0,0,0,.5)}
+  .brand .bub{position:relative;width:30px;height:30px;border-radius:9px 9px 9px 3px;flex:none;
+    background:linear-gradient(150deg,var(--gold-2),var(--accent));display:grid;place-items:center;
+    box-shadow:0 6px 22px -8px rgba(201,168,106,.6)}
+  .brand .bub i{width:3px;height:3px;border-radius:50%;background:#15120d;box-shadow:6px 0 #15120d,-6px 0 #15120d}
+  .brand h1,.vtotal .vnum,.whead,.vnum{font-family:"Fraunces",Georgia,serif !important;letter-spacing:-.01em}
+  .brand h1{font-weight:600;font-size:21px}
+  .onair.live{border-color:rgba(201,168,106,.34)}
+  .tab.active::after{background:linear-gradient(90deg,var(--gold-2),var(--accent))}
+  .msg .body{color:#cbc2af}
+  ::-webkit-scrollbar-thumb{background:#2a241b !important;border-color:var(--bg) !important}
+</style>
+
+<header>
+  <div class="brand">
+    <span class="bub" aria-hidden="true"><i></i></span>
+    <div><h1>OmniChat</h1><span class="sub">Twitch · Kick · X · YouTube</span></div>
+  </div>
+  <div class="hstat">
+    <div class="onair" id="onair"><span class="led"></span><span id="onairtxt">Standby</span></div>
+    <div class="vtotal" title="Combined live viewers"><span class="vnum" id="vnum">—</span><span>watching</span></div>
+  </div>
+</header>
+
+<main>
+  <aside class="chat">
+    <div class="head">Combined chat</div>
+    <div class="feed" id="feed"><div class="empty">Waiting for chat…</div></div>
+  </aside>
+  <section class="stage">
+    <div class="streams" id="streams"><div class="empty">No streams live yet.</div></div>
+  </section>
+</main>
+
+<script>
+  const $ = (id) => document.getElementById(id);
+  const ICON = {
+    twitch: `<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M11.571 4.714h1.715v5.143H11.57zm4.715 0H18v5.143h-1.714zM6 0L1.714 4.286v15.428h5.143V24l4.286-4.286h3.428L22.286 12V0zm14.571 11.143l-3.428 3.428h-3.429l-3 3v-3H6.857V1.714h13.714Z"/></svg>`,
+    youtube: `<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M23.498 6.186a3.016 3.016 0 0 0-2.122-2.136C19.505 3.545 12 3.545 12 3.545s-7.505 0-9.377.505A3.017 3.017 0 0 0 .502 6.186C0 8.07 0 12 0 12s0 3.93.502 5.814a3.016 3.016 0 0 0 2.122 2.136c1.871.505 9.376.505 9.376.505s7.505 0 9.377-.505a3.015 3.015 0 0 0 2.122-2.136C24 15.93 24 12 24 12s0-3.93-.502-5.814zM9.545 15.568V8.432L15.818 12l-6.273 3.568z"/></svg>`,
+    kick: `<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M1.333 0h8v5.333H12V2.667h2.667V0h8v8H20v2.667h-2.667v2.666H20V16h2.667v8h-8v-2.667H12v-2.666H9.333V24h-8Z"/></svg>`,
+    x: `<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M18.901 1.153h3.68l-8.04 9.19L24 22.846h-7.406l-5.8-7.584-6.638 7.584H.474l8.6-9.83L0 1.154h7.594l5.243 6.932ZM17.61 20.644h2.039L6.486 3.24H4.298Z"/></svg>`,
+  };
+  const NAMECOLOR = { twitch: "#bf94ff", kick: "#53fc18", youtube: "#ff7a7a", x: "#e7e9ea" };
+  const BADGE = (() => {
+    const star = `<svg viewBox="0 0 24 24"><path d="M12 2.5l2.9 5.9 6.5.9-4.7 4.6 1.1 6.5L12 17.8 6.2 20.9l1.1-6.5L2.6 9.3l6.5-.9z"/></svg>`;
+    const shield = `<svg viewBox="0 0 24 24"><path d="M12 2 4 5.3V11c0 5 3.4 9.4 8 10.7 4.6-1.3 8-5.7 8-10.7V5.3z"/></svg>`;
+    const crown = `<svg viewBox="0 0 24 24"><path d="M3 17h18v3H3zM3 6l4.5 4L12 4l4.5 6L21 6l-1.6 9H4.6z"/></svg>`;
+    const check = `<svg viewBox="0 0 24 24"><path d="M12 2a10 10 0 100 20 10 10 0 000-20zm4.7 7.3-6 6-2.7-2.7 1.4-1.4 1.3 1.3 4.6-4.6z"/></svg>`;
+    return { broadcaster:{c:"#ff5a5a",s:crown}, moderator:{c:"#56d364",s:shield}, vip:{c:"#ff67d0",s:star},
+      subscriber:{c:"#ffb13d",s:star}, founder:{c:"#ffd23d",s:star}, member:{c:"#2ba640",s:star},
+      verified:{c:"#3ea6ff",s:check}, partner:{c:"#3ea6ff",s:check} };
+  })();
+  const esc = (s) => String(s).replace(/[<>&]/g, (c) => ({"<":"&lt;",">":"&gt;","&":"&amp;"}[c]));
+  const escAttr = (s) => String(s).replace(/[<>&"]/g, (c) => ({"<":"&lt;",">":"&gt;","&":"&amp;",'"':"&quot;"}[c]));
+  function body(m) {
+    if (Array.isArray(m.fragments) && m.fragments.length) {
+      return m.fragments.map((f) => f.type === "emote" && /^https:\/\//.test(f.url || "")
+        ? `<img class="emote" src="${escAttr(f.url)}" alt="${escAttr(f.name)}" loading="lazy">` : esc(f.text || "")).join("");
+    }
+    return esc(m.text);
+  }
+
+  let channels = [];
+  const viewers = {};
+  const lastSeen = {};
+  let focusId = null;
+
+  const feed = $("feed");
+  function addMsg(m) {
+    const e = feed.querySelector(".empty"); if (e) e.remove();
+    lastSeen[`${m.platform}:${m.channel}`] = Date.now();
+    const near = feed.scrollHeight - feed.scrollTop - feed.clientHeight < 90;
+    const row = document.createElement("div");
+    row.className = "msg";
+    const badges = (m.author.badges || []).map((b) => { const d = BADGE[b.type]; return d ? `<span class="bdg" style="color:${d.c}" title="${escAttr(b.label||b.type)}">${d.s}</span>` : ""; }).join("");
+    row.innerHTML = `<span class="src ${m.platform}">${ICON[m.platform]||""}</span>${badges}` +
+      `<span class="user" style="color:${NAMECOLOR[m.platform] || "#cbb6ff"}">${esc(m.author.name)}</span>` +
+      `<span class="text">${body(m)}</span>`;
+    feed.appendChild(row);
+    while (feed.childElementCount > 160) feed.removeChild(feed.firstChild);
+    if (near) feed.scrollTop = feed.scrollHeight;
+  }
+
+  function streamEmbed(c) {
+    const host = location.hostname;
+    if (c.platform === "twitch") return `https://player.twitch.tv/?channel=${encodeURIComponent(c.channel)}&parent=${host}&muted=true`;
+    if (c.platform === "kick") return `https://player.kick.com/${encodeURIComponent(c.channel)}?autoplay=true&muted=true`;
+    if (c.platform === "youtube") {
+      if (c.channel.startsWith("UC")) return `https://www.youtube.com/embed/live_stream?channel=${encodeURIComponent(c.channel)}&autoplay=1&mute=1`;
+      if (c.channel.startsWith("@")) return null;
+      return `https://www.youtube.com/embed/${encodeURIComponent(c.channel)}?autoplay=1&mute=1`;
+    }
+    return null;
+  }
+  const streamsEl = $("streams");
+  function renderStreams() {
+    if (!channels.length) { streamsEl.innerHTML = `<div class="empty">No streams live yet.</div>`; return; }
+    streamsEl.classList.toggle("focused", !!focusId);
+    streamsEl.innerHTML = channels.map((c) => {
+      const label = `<span class="slabel">${ICON[c.platform]||""}${esc(c.channel)}</span>`;
+      const src = streamEmbed(c);
+      const isActive = c.id === focusId;
+      if (!src) return `<div class="stream note" data-id="${c.id}">${label}<span>X broadcast — <a href="https://x.com/i/broadcasts/${escAttr(c.channel)}" target="_blank" rel="noopener">watch on X</a></span></div>`;
+      // Active stream: no overlay (player is interactive) + a "Back to grid" button.
+      // Everything else: an overlay that captures the click to focus that stream.
+      const layer = isActive
+        ? `<button class="exit" data-exit="1">Back to grid</button>`
+        : `<div class="ov" data-id="${c.id}"></div>`;
+      return `<div class="stream${isActive ? " active" : ""}" data-id="${c.id}">${label}<iframe src="${escAttr(src)}" allow="autoplay; fullscreen; encrypted-media" allowfullscreen loading="lazy"></iframe>${layer}</div>`;
+    }).join("");
+    streamsEl.querySelectorAll(".ov").forEach((el) => { el.onclick = () => { focusId = el.dataset.id; renderStreams(); }; });
+    streamsEl.querySelectorAll(".exit").forEach((el) => { el.onclick = () => { focusId = null; renderStreams(); }; });
+  }
+
+  function render() {
+    const anyLive = channels.some((c) => { const t = lastSeen[`${c.platform}:${c.channel}`]; return t && Date.now() - t < 30000; });
+    $("onair").classList.toggle("live", anyLive);
+    $("onairtxt").textContent = anyLive ? "On Air" : "Standby";
+    const nums = channels.map((c) => viewers[c.id]).filter((n) => typeof n === "number");
+    $("vnum").textContent = nums.length ? nums.reduce((s, n) => s + n, 0).toLocaleString() : "—";
+  }
+
+  function connect() {
+    const ws = new WebSocket(`ws://${location.host}`);
+    ws.onmessage = (e) => {
+      const d = JSON.parse(e.data);
+      if (d.channels) { channels = d.channels; renderStreams(); render(); }
+      if (d.kind === "message") { addMsg(d.message); render(); }
+      if (d.kind === "viewers") { for (const c of d.counts) viewers[c.id] = c.viewers; render(); }
+    };
+    ws.onclose = () => setTimeout(connect, 1000);
+  }
+
+  (async function init() {
+    try { const s = await (await fetch("/api/state")).json(); channels = s.channels || []; } catch {}
+    renderStreams(); render(); connect();
+    setInterval(render, 5000);
+  })();
+</script>

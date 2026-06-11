@@ -89,7 +89,7 @@
     row.className = "row " + m.platform;
     row.innerHTML =
       `<span class="pill">${ICON[m.platform] || ""}${LABEL[m.platform] || m.platform}</span>` +
-      `<span class="name" style="color:${m.author.color || NAMECOLOR[m.platform] || "#cbb6ff"}">${esc(m.author.name)}</span>` +
+      `<span class="name" style="color:${NAMECOLOR[m.platform] || "#cbb6ff"}">${esc(m.author.name)}</span>` +
       `<span class="text">${body(m)}</span>`;
     feed.appendChild(row);
     while (feed.childElementCount > settings.maxMessages) feed.removeChild(feed.firstChild);

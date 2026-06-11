@@ -1,0 +1,427 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>OmniChat — every voice, one feed</title>
+<meta name="description" content="OmniChat unifies live chat from Twitch, Kick, X and YouTube into one real-time terminal — source-labeled, color-coded, and read for real." />
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,400;0,9..144,500;0,9..144,600;1,9..144,400;1,9..144,500&family=Inter:wght@400;450;500;600;700&display=swap" rel="stylesheet" />
+<style>
+  :root{
+    --ink:#0b0a08; --ink-2:#100e0b; --ink-3:#16130f;
+    --paper:#ece6d8; --paper-2:#cfc6b4;
+    --dim:rgba(236,230,216,.60); --faint:rgba(236,230,216,.34);
+    --gold:#c9a86a; --gold-2:#e3c98f; --line:rgba(236,230,216,.12); --line-2:rgba(236,230,216,.20);
+    --twitch:#a970ff; --kick:#53fc18; --x:#e7e9ea; --youtube:#ff5252;
+    --serif:"Fraunces",Georgia,serif; --sans:"Inter",system-ui,-apple-system,Segoe UI,sans-serif;
+    --ease:cubic-bezier(.16,1,.3,1);
+  }
+  *{box-sizing:border-box}
+  html{scroll-behavior:smooth}
+  body{margin:0;background:var(--ink);color:var(--paper);font-family:var(--sans);font-size:16px;line-height:1.65;
+    -webkit-font-smoothing:antialiased;overflow-x:hidden}
+  a{color:inherit;text-decoration:none}
+  ::selection{background:rgba(201,168,106,.3);color:#fff}
+
+  /* ---- atmosphere: layered radial pools + grain + vignette ---- */
+  .bg{position:fixed;inset:0;z-index:-3;background:
+    radial-gradient(1200px 720px at 72% -8%, rgba(201,168,106,.16), transparent 60%),
+    radial-gradient(900px 700px at 8% 4%, rgba(169,112,255,.10), transparent 58%),
+    radial-gradient(1100px 900px at 50% 118%, rgba(83,252,24,.06), transparent 60%),
+    linear-gradient(180deg,var(--ink) 0%, var(--ink-2) 60%, var(--ink) 100%)}
+  .glow{position:fixed;width:46vmax;height:46vmax;border-radius:50%;z-index:-2;filter:blur(60px);opacity:.5;
+    background:radial-gradient(circle,rgba(201,168,106,.18),transparent 65%);pointer-events:none;
+    transition:transform .6s var(--ease)}
+  .grain{position:fixed;inset:0;z-index:-1;pointer-events:none;opacity:.05;mix-blend-mode:soft-light;
+    background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='240' height='240'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.9' numOctaves='3'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E")}
+  .vignette{position:fixed;inset:0;z-index:-1;pointer-events:none;
+    box-shadow:inset 0 0 240px 60px rgba(0,0,0,.6)}
+
+  .wrap{max-width:1180px;margin:0 auto;padding:0 28px}
+
+  /* ---- nav ---- */
+  nav{position:sticky;top:0;z-index:50;backdrop-filter:blur(14px);
+    background:linear-gradient(180deg,rgba(11,10,8,.86),rgba(11,10,8,.4));border-bottom:1px solid var(--line)}
+  nav .wrap{display:flex;align-items:center;justify-content:space-between;height:70px}
+  .mark{display:flex;align-items:center;gap:11px;font-family:var(--serif);font-weight:600;font-size:20px;letter-spacing:-.01em}
+  .mark .bub{position:relative;width:30px;height:30px;border-radius:9px 9px 9px 3px;
+    background:linear-gradient(150deg,var(--gold-2),var(--gold));display:grid;place-items:center;flex:none;
+    box-shadow:0 6px 22px -8px rgba(201,168,106,.6)}
+  .mark .bub i{width:3px;height:3px;border-radius:50%;background:var(--ink);box-shadow:6px 0 var(--ink),-6px 0 var(--ink)}
+  .navlinks{display:flex;align-items:center;gap:30px;font-size:13.5px;color:var(--dim);letter-spacing:.01em}
+  .navlinks a{transition:color .25s var(--ease)}
+  .navlinks a:hover{color:var(--paper)}
+  .navlinks .cta{display:none}
+  .btn{font-family:var(--sans);font-weight:600;font-size:14px;cursor:pointer;border-radius:11px;
+    padding:11px 20px;transition:transform .3s var(--ease),box-shadow .3s var(--ease),background .3s var(--ease),color .25s,border-color .25s;
+    border:1px solid transparent;display:inline-flex;align-items:center;gap:9px;will-change:transform}
+  .btn:focus-visible{outline:2px solid var(--gold);outline-offset:3px}
+  .btn-gold{background:linear-gradient(150deg,var(--gold-2),var(--gold));color:#1a140a;
+    box-shadow:0 12px 30px -12px rgba(201,168,106,.7),inset 0 1px 0 rgba(255,255,255,.4)}
+  .btn-gold:hover{transform:translateY(-2px);box-shadow:0 18px 40px -12px rgba(201,168,106,.8),inset 0 1px 0 rgba(255,255,255,.5)}
+  .btn-gold:active{transform:translateY(0)}
+  .btn-ghost{background:rgba(236,230,216,.03);border-color:var(--line-2);color:var(--paper)}
+  .btn-ghost:hover{transform:translateY(-2px);border-color:var(--gold);color:var(--gold-2);background:rgba(201,168,106,.06)}
+  .btn-ghost:active{transform:translateY(0)}
+  nav .btn{padding:9px 17px}
+
+  /* ---- hero ---- */
+  header.hero{position:relative;padding:88px 0 70px}
+  .hero .wrap{display:grid;grid-template-columns:1.05fr .95fr;gap:54px;align-items:center}
+  .eyebrow{display:inline-flex;align-items:center;gap:10px;font-size:11.5px;font-weight:600;letter-spacing:.26em;
+    text-transform:uppercase;color:var(--gold-2);margin-bottom:26px}
+  .eyebrow .rule{width:30px;height:1px;background:linear-gradient(90deg,var(--gold),transparent)}
+  h1{font-family:var(--serif);font-weight:500;font-size:clamp(46px,6.4vw,86px);line-height:.98;letter-spacing:-.03em;
+    margin:0 0 22px}
+  h1 em{font-style:italic;font-weight:500;color:var(--gold-2)}
+  h1 .draw{position:relative;white-space:nowrap}
+  h1 .draw::after{content:"";position:absolute;left:0;right:0;bottom:.06em;height:3px;border-radius:2px;
+    background:linear-gradient(90deg,var(--gold),transparent);transform:scaleX(0);transform-origin:left;
+    transition:transform 1s var(--ease) .5s}
+  .lead.in h1 .draw::after{transform:scaleX(1)}
+  .sub{font-size:18px;line-height:1.7;color:var(--dim);max-width:30em;margin:0 0 34px}
+  .sub b{color:var(--paper);font-weight:600}
+  .actions{display:flex;gap:14px;flex-wrap:wrap}
+  .hero-foot{margin-top:34px;display:flex;align-items:center;gap:18px;font-size:12.5px;color:var(--faint)}
+  .hero-foot .dots{display:flex;gap:7px}
+  .hero-foot .dots span{width:8px;height:8px;border-radius:50%}
+
+  /* reveal */
+  .reveal{opacity:0;transform:translateY(26px);transition:opacity .9s var(--ease),transform .9s var(--ease)}
+  .reveal.in{opacity:1;transform:none}
+  .reveal.d1{transition-delay:.08s}.reveal.d2{transition-delay:.16s}.reveal.d3{transition-delay:.24s}.reveal.d4{transition-delay:.32s}
+
+  /* ---- live chat panel (hero visual) ---- */
+  .panel{position:relative;border-radius:20px;border:1px solid var(--line-2);overflow:hidden;
+    background:linear-gradient(180deg,rgba(22,19,15,.92),rgba(12,11,9,.92));
+    box-shadow:0 40px 90px -40px rgba(0,0,0,.9),0 2px 0 rgba(236,230,216,.05) inset;
+    transform:perspective(1400px) rotateY(-7deg) rotateX(2deg);transition:transform .8s var(--ease)}
+  .panel:hover{transform:perspective(1400px) rotateY(-3deg) rotateX(1deg)}
+  .panel .top{display:flex;align-items:center;gap:10px;padding:13px 16px;border-bottom:1px solid var(--line)}
+  .panel .top .tl{display:flex;gap:6px}
+  .panel .top .tl i{width:10px;height:10px;border-radius:50%;background:rgba(236,230,216,.18)}
+  .panel .top .tt{margin-left:6px;font-size:12px;color:var(--faint);letter-spacing:.04em}
+  .panel .top .liveb{margin-left:auto;display:flex;align-items:center;gap:7px;font-size:10.5px;font-weight:700;
+    letter-spacing:.12em;color:#ff6b6b;text-transform:uppercase}
+  .panel .top .liveb .d{width:7px;height:7px;border-radius:50%;background:#ff5252;box-shadow:0 0 8px #ff5252;animation:blink 1.4s infinite}
+  @keyframes blink{50%{opacity:.35}}
+  #feed{height:362px;overflow:hidden;padding:8px 0;mask-image:linear-gradient(180deg,transparent,#000 8%,#000 92%,transparent)}
+  .row{display:flex;gap:9px;align-items:baseline;padding:6px 17px;font-size:14px;line-height:1.45;
+    animation:rise .5s var(--ease) both}
+  @keyframes rise{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:none}}
+  .row .ic{flex:none;width:15px;height:15px;position:relative;top:2px}
+  .row .ic svg{width:15px;height:15px;fill:currentColor}
+  .row .u{font-weight:700;flex:none}
+  .row .t{color:var(--paper-2);word-break:break-word}
+  .p-twitch .ic,.p-twitch .u{color:var(--twitch)} .p-kick .ic,.p-kick .u{color:var(--kick)}
+  .p-x .ic,.p-x .u{color:var(--x)} .p-youtube .ic,.p-youtube .u{color:var(--youtube)}
+  .panel .glassnum{position:absolute;right:14px;bottom:13px;display:flex;align-items:center;gap:8px;
+    padding:7px 13px;border-radius:999px;background:rgba(11,10,8,.7);border:1px solid var(--line);
+    font-size:12px;color:var(--dim);backdrop-filter:blur(6px)}
+  .panel .glassnum b{color:var(--paper);font-variant-numeric:tabular-nums}
+
+  /* ---- marquee ---- */
+  .strip{border-block:1px solid var(--line);padding:20px 0;margin-top:8px;overflow:hidden;
+    -webkit-mask-image:linear-gradient(90deg,transparent,#000 12%,#000 88%,transparent);
+    mask-image:linear-gradient(90deg,transparent,#000 12%,#000 88%,transparent)}
+  .marquee{display:flex;gap:54px;width:max-content;animation:scroll 26s linear infinite}
+  .marquee:hover{animation-play-state:paused}
+  @keyframes scroll{to{transform:translateX(-50%)}}
+  .mq{display:flex;align-items:center;gap:13px;font-family:var(--serif);font-size:22px;color:var(--faint);
+    letter-spacing:-.01em;white-space:nowrap}
+  .mq svg{width:20px;height:20px}
+  .mq.t{color:rgba(169,112,255,.7)}.mq.k{color:rgba(83,252,24,.6)}.mq.x{color:rgba(231,233,234,.55)}.mq.y{color:rgba(255,82,82,.65)}
+
+  /* ---- sections ---- */
+  section{position:relative;padding:104px 0}
+  .stitle{font-family:var(--serif);font-weight:500;font-size:clamp(32px,4.2vw,52px);line-height:1.04;
+    letter-spacing:-.025em;margin:0 0 16px}
+  .skicker{font-size:11.5px;font-weight:600;letter-spacing:.24em;text-transform:uppercase;color:var(--gold-2);margin-bottom:18px}
+  .sintro{color:var(--dim);font-size:17px;max-width:34em;margin:0 0 8px}
+
+  /* stats */
+  .stats{display:grid;grid-template-columns:repeat(3,1fr);gap:0;border:1px solid var(--line);border-radius:18px;overflow:hidden;
+    background:linear-gradient(180deg,rgba(22,19,15,.5),rgba(12,11,9,.3))}
+  .stat{padding:38px 34px;border-right:1px solid var(--line)}
+  .stat:last-child{border-right:0}
+  .stat .n{font-family:var(--serif);font-weight:500;font-size:clamp(40px,5vw,62px);line-height:1;letter-spacing:-.03em;
+    color:var(--paper);font-variant-numeric:tabular-nums}
+  .stat .n .accent{color:var(--gold-2)}
+  .stat .l{margin-top:12px;font-size:13.5px;color:var(--dim);letter-spacing:.02em}
+
+  /* features */
+  .feats{display:grid;grid-template-columns:repeat(2,1fr);gap:20px;margin-top:46px}
+  .card{position:relative;padding:34px 32px 36px;border-radius:18px;border:1px solid var(--line);
+    background:linear-gradient(180deg,rgba(24,20,16,.6),rgba(13,12,9,.5));overflow:hidden;
+    transition:transform .5s var(--ease),border-color .5s var(--ease),box-shadow .5s var(--ease)}
+  .card::before{content:"";position:absolute;inset:0;opacity:0;transition:opacity .5s var(--ease);
+    background:radial-gradient(420px 200px at var(--mx,30%) -10%,rgba(201,168,106,.14),transparent 70%)}
+  .card:hover{transform:translateY(-6px);border-color:var(--line-2);
+    box-shadow:0 30px 60px -34px rgba(0,0,0,.9),0 0 0 1px rgba(201,168,106,.12)}
+  .card:hover::before{opacity:1}
+  .card .num{font-family:var(--serif);font-style:italic;font-size:17px;color:var(--gold);opacity:.7;margin-bottom:18px}
+  .card h3{font-family:var(--serif);font-weight:500;font-size:25px;letter-spacing:-.02em;margin:0 0 11px}
+  .card p{color:var(--dim);font-size:15px;line-height:1.7;margin:0}
+  .card .chips{display:flex;gap:7px;margin-top:18px;flex-wrap:wrap}
+  .chip{font-size:11px;font-weight:600;letter-spacing:.03em;padding:5px 10px;border-radius:7px;
+    border:1px solid var(--line-2);color:var(--dim)}
+
+  /* split */
+  .split{display:grid;grid-template-columns:1fr 1fr;gap:54px;align-items:center}
+  .watchviz{position:relative;border-radius:18px;border:1px solid var(--line-2);overflow:hidden;aspect-ratio:16/11;
+    background:#06060a;box-shadow:0 40px 90px -44px rgba(0,0,0,.9)}
+  .wgrid{position:absolute;inset:12px;display:grid;grid-template-columns:1fr 1fr;grid-template-rows:1fr 1fr;gap:10px}
+  .wtile{border-radius:11px;position:relative;overflow:hidden;border:1px solid var(--line);
+    background:linear-gradient(135deg,#15131a,#0a0a0e)}
+  .wtile.big{grid-column:1/3;grid-row:1/3;border-color:var(--line-2);box-shadow:0 0 0 1px rgba(201,168,106,.18)}
+  .wtile .tag{position:absolute;left:9px;top:9px;display:flex;align-items:center;gap:5px;font-size:10.5px;font-weight:700;
+    padding:3px 7px;border-radius:6px;background:rgba(0,0,0,.55);color:#fff}
+  .wtile .tag svg{width:12px;height:12px;fill:currentColor}
+  .wtile .play{position:absolute;inset:0;display:grid;place-items:center}
+  .wtile .play svg{width:34px;height:34px;fill:rgba(236,230,216,.5)}
+  .wtile.big::after{content:"";position:absolute;inset:0;background:
+    radial-gradient(300px 200px at 70% 30%,rgba(169,112,255,.22),transparent 70%)}
+  .glide{animation:glow-shift 6s var(--ease) infinite alternate}
+  @keyframes glow-shift{to{opacity:.7;transform:scale(1.02)}}
+
+  /* CTA band */
+  .band{text-align:center;padding:112px 0}
+  .band .bub-lg{width:64px;height:64px;border-radius:18px 18px 18px 6px;margin:0 auto 30px;
+    background:linear-gradient(150deg,var(--gold-2),var(--gold));display:grid;place-items:center;
+    box-shadow:0 24px 60px -22px rgba(201,168,106,.7);animation:float 5s var(--ease) infinite alternate}
+  .band .bub-lg i{width:5px;height:5px;border-radius:50%;background:var(--ink);box-shadow:11px 0 var(--ink),-11px 0 var(--ink)}
+  @keyframes float{to{transform:translateY(-10px)}}
+  .band h2{font-family:var(--serif);font-weight:500;font-size:clamp(38px,5.4vw,68px);letter-spacing:-.03em;line-height:1.02;margin:0 0 18px}
+  .band h2 em{font-style:italic;color:var(--gold-2)}
+  .band p{color:var(--dim);font-size:18px;max-width:30em;margin:0 auto 36px}
+  .band .actions{justify-content:center}
+
+  /* footer */
+  footer{border-top:1px solid var(--line);padding:42px 0 56px}
+  footer .wrap{display:flex;align-items:center;justify-content:space-between;gap:24px;flex-wrap:wrap}
+  footer .fmark{font-family:var(--serif);font-size:16px;color:var(--paper-2)}
+  footer .fnote{font-size:12.5px;color:var(--faint);max-width:34em}
+  footer .fp{display:flex;gap:16px}
+  footer .fp svg{width:17px;height:17px;fill:var(--faint);transition:fill .25s}
+  footer .fp a:hover svg{fill:var(--paper)}
+
+  @media(max-width:920px){
+    .hero .wrap,.split{grid-template-columns:1fr;gap:40px}
+    .panel{transform:none;order:2}.panel:hover{transform:none}
+    .feats,.stats{grid-template-columns:1fr}
+    .stat{border-right:0;border-bottom:1px solid var(--line)}.stat:last-child{border-bottom:0}
+    .navlinks a:not(.cta){display:none}.navlinks .cta{display:inline-flex}
+    section{padding:78px 0}
+  }
+</style>
+</head>
+<body>
+<div class="bg"></div><div class="glow" id="glow"></div><div class="grain"></div><div class="vignette"></div>
+
+<nav>
+  <div class="wrap">
+    <a class="mark" href="#top"><span class="bub" aria-hidden="true"><i></i></span> OmniChat</a>
+    <div class="navlinks">
+      <a href="#feed-feature">The Feed</a>
+      <a href="#watch">Watch</a>
+      <a href="#intel">Intelligence</a>
+      <a class="btn btn-gold cta" href="/panel">Launch App</a>
+    </div>
+  </div>
+</nav>
+
+<header class="hero" id="top">
+  <div class="wrap">
+    <div class="lead reveal">
+      <span class="eyebrow"><span class="rule"></span> The live-chat terminal</span>
+      <h1>Every voice.<br><span class="draw"><em>One</em> feed.</span></h1>
+      <p class="sub">OmniChat fuses live chat from <b>Twitch, Kick, X &amp; YouTube</b> into a single real-time terminal — source-labeled, color-coded, and read for <b>real</b>. Watch every stream and read every room from one place.</p>
+      <div class="actions">
+        <a class="btn btn-gold" href="/panel">Launch the Terminal
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#1a140a" stroke-width="2.4"><path d="M5 12h14M13 6l6 6-6 6" stroke-linecap="round" stroke-linejoin="round"/></svg></a>
+        <a class="btn btn-ghost" href="/live">Enter the Viewer</a>
+      </div>
+      <div class="hero-foot">
+        <span class="dots"><span style="background:var(--twitch)"></span><span style="background:var(--kick)"></span><span style="background:var(--x)"></span><span style="background:var(--youtube)"></span></span>
+        Four platforms, one conversation — in real time.
+      </div>
+    </div>
+
+    <div class="panel reveal d2" id="tilt">
+      <div class="top">
+        <span class="tl"><i></i><i></i><i></i></span>
+        <span class="tt">combined feed</span>
+        <span class="liveb"><span class="d"></span> Live</span>
+      </div>
+      <div id="feed"></div>
+      <div class="glassnum"><b id="hvnum">—</b> watching · <b id="hmpm">—</b>/min</div>
+    </div>
+  </div>
+</header>
+
+<div class="strip">
+  <div class="marquee" id="marq"></div>
+</div>
+
+<section id="intel">
+  <div class="wrap">
+    <div class="skicker reveal">By the numbers</div>
+    <h2 class="stitle reveal d1">It doesn't just show chat.<br>It <em style="font-style:italic;color:var(--gold-2)">reads the room.</em></h2>
+    <p class="sintro reveal d2" style="margin-bottom:42px">Live audience intelligence computed on the real stream — not a demo dataset.</p>
+    <div class="stats reveal d2">
+      <div class="stat"><div class="n"><span class="accent" data-count="4">0</span></div><div class="l">platforms unified into one feed</div></div>
+      <div class="stat"><div class="n"><span data-count="112" data-suffix="K">0</span></div><div class="l">combined viewers, live, at a glance</div></div>
+      <div class="stat"><div class="n"><span data-count="870" data-suffix="+">0</span></div><div class="l">messages a minute, color-coded by source</div></div>
+    </div>
+  </div>
+</section>
+
+<section id="feed-feature" style="padding-top:24px">
+  <div class="wrap">
+    <div class="skicker reveal">What you get</div>
+    <h2 class="stitle reveal d1">A terminal worthy of the stream.</h2>
+    <div class="feats">
+      <div class="card reveal d1" data-tilt>
+        <div class="num">01</div>
+        <h3>One feed, every source</h3>
+        <p>Twitch, Kick, X and YouTube chat merged into one chronological stream — each line color-coded to its platform. Hover any message to see who, where, and whether they're subscribed.</p>
+        <div class="chips"><span class="chip">Source labels</span><span class="chip">Native emotes</span><span class="chip">BTTV · 7TV</span></div>
+      </div>
+      <div class="card reveal d2" data-tilt>
+        <div class="num">02</div>
+        <h3>Watch the whole room</h3>
+        <p>Every stream, side by side. Click one to focus — the player goes full and fully interactive while the combined chat stays docked beside it. Seamless, no reloads.</p>
+        <div class="chips"><span class="chip">Multistream</span><span class="chip">Click to focus</span><span class="chip">Viewer page</span></div>
+      </div>
+      <div class="card reveal d1" data-tilt>
+        <div class="num">03</div>
+        <h3>Read the mood</h3>
+        <p>A real-time intelligence panel: messages per minute, platform mix, the top chatters, and a live chat-mood gauge — so you feel the energy of the room as it shifts.</p>
+        <div class="chips"><span class="chip">Mood gauge</span><span class="chip">Top chatters</span><span class="chip">Platform mix</span></div>
+      </div>
+      <div class="card reveal d2" data-tilt>
+        <div class="num">04</div>
+        <h3>Actually live</h3>
+        <p>Not faked. We read Twitch, Kick, YouTube — and even X broadcast chat — in real time. Real voices, real numbers, no replay. The hard part, solved.</p>
+        <div class="chips"><span class="chip">Real X chat</span><span class="chip">No replay</span><span class="chip">Live counts</span></div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section id="watch">
+  <div class="wrap split">
+    <div class="reveal">
+      <div class="skicker">For the audience</div>
+      <h2 class="stitle">Watch every stream.<br>Read every voice.</h2>
+      <p class="sintro">The public viewer is built for the crowd: drop in, watch all the streams at once, and click any one to bring it full-screen — chat from every platform flows in one column beside it. No setup, no login, no noise.</p>
+      <div class="actions" style="margin-top:30px">
+        <a class="btn btn-ghost" href="/live">Open the Viewer
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4"><path d="M5 12h14M13 6l6 6-6 6" stroke-linecap="round" stroke-linejoin="round"/></svg></a>
+      </div>
+    </div>
+    <div class="watchviz reveal d2">
+      <div class="wgrid">
+        <div class="wtile big"><span class="tag" style="color:var(--twitch)"><svg viewBox="0 0 24 24"><path d="M11.571 4.714h1.715v5.143H11.57zm4.715 0H18v5.143h-1.714zM6 0L1.714 4.286v15.428h5.143V24l4.286-4.286h3.428L22.286 12V0zm14.571 11.143l-3.428 3.428h-3.429l-3 3v-3H6.857V1.714h13.714Z"/></svg>twitch</span><span class="play glide"><svg viewBox="0 0 24 24"><path d="M8 5v14l11-7z"/></svg></span></div>
+        <div class="wtile"><span class="tag" style="color:var(--kick)"><svg viewBox="0 0 24 24"><path d="M1.333 0h8v5.333H12V2.667h2.667V0h8v8H20v2.667h-2.667v2.666H20V16h2.667v8h-8v-2.667H12v-2.666H9.333V24h-8Z"/></svg>kick</span></div>
+        <div class="wtile"><span class="tag" style="color:#fff"><svg viewBox="0 0 24 24"><path d="M18.9 1.153h3.68l-8.04 9.19L24 22.846h-7.41l-5.8-7.584-6.64 7.584H.47l8.6-9.83L0 1.154h7.59l5.24 6.932ZM17.6 20.644h2.04L6.49 3.24H4.3Z"/></svg>X</span></div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section class="band">
+  <div class="wrap">
+    <div class="bub-lg reveal" aria-hidden="true"><i></i></div>
+    <h2 class="reveal d1">Step inside the <em>bubble.</em></h2>
+    <p class="reveal d2">One terminal for every chat, every stream, every voice. Built for the people who command the room.</p>
+    <div class="actions reveal d2">
+      <a class="btn btn-gold" href="/panel">Launch the Terminal</a>
+      <a class="btn btn-ghost" href="/live">Enter the Viewer</a>
+    </div>
+  </div>
+</section>
+
+<footer>
+  <div class="wrap">
+    <div>
+      <div class="fmark">OmniChat</div>
+      <div class="fnote">Unified live chat for Twitch · Kick · X · YouTube. Built for the Market&nbsp;Bubble × Polymarket $10,000 Vibe Code Challenge.</div>
+    </div>
+    <div class="fp">
+      <a href="#" aria-label="Twitch"><svg viewBox="0 0 24 24"><path d="M11.571 4.714h1.715v5.143H11.57zm4.715 0H18v5.143h-1.714zM6 0L1.714 4.286v15.428h5.143V24l4.286-4.286h3.428L22.286 12V0zm14.571 11.143l-3.428 3.428h-3.429l-3 3v-3H6.857V1.714h13.714Z"/></svg></a>
+      <a href="#" aria-label="X"><svg viewBox="0 0 24 24"><path d="M18.9 1.153h3.68l-8.04 9.19L24 22.846h-7.41l-5.8-7.584-6.64 7.584H.47l8.6-9.83L0 1.154h7.59l5.24 6.932ZM17.6 20.644h2.04L6.49 3.24H4.3Z"/></svg></a>
+      <a href="#" aria-label="YouTube"><svg viewBox="0 0 24 24"><path d="M23.498 6.186a3.016 3.016 0 0 0-2.122-2.136C19.505 3.545 12 3.545 12 3.545s-7.505 0-9.377.505A3.017 3.017 0 0 0 .502 6.186C0 8.07 0 12 0 12s0 3.93.502 5.814a3.016 3.016 0 0 0 2.122 2.136c1.871.505 9.376.505 9.376.505s7.505 0 9.377-.505a3.015 3.015 0 0 0 2.122-2.136C24 15.93 24 12 24 12s0-3.93-.502-5.814zM9.545 15.568V8.432L15.818 12z"/></svg></a>
+    </div>
+  </div>
+</footer>
+
+<script>
+  const ICON = {
+    twitch:'<svg viewBox="0 0 24 24"><path d="M11.571 4.714h1.715v5.143H11.57zm4.715 0H18v5.143h-1.714zM6 0L1.714 4.286v15.428h5.143V24l4.286-4.286h3.428L22.286 12V0zm14.571 11.143l-3.428 3.428h-3.429l-3 3v-3H6.857V1.714h13.714Z"/></svg>',
+    kick:'<svg viewBox="0 0 24 24"><path d="M1.333 0h8v5.333H12V2.667h2.667V0h8v8H20v2.667h-2.667v2.666H20V16h2.667v8h-8v-2.667H12v-2.666H9.333V24h-8Z"/></svg>',
+    x:'<svg viewBox="0 0 24 24"><path d="M18.9 1.153h3.68l-8.04 9.19L24 22.846h-7.41l-5.8-7.584-6.64 7.584H.47l8.6-9.83L0 1.154h7.59l5.24 6.932ZM17.6 20.644h2.04L6.49 3.24H4.3Z"/></svg>',
+    youtube:'<svg viewBox="0 0 24 24"><path d="M23.498 6.186a3.016 3.016 0 0 0-2.122-2.136C19.505 3.545 12 3.545 12 3.545s-7.505 0-9.377.505A3.017 3.017 0 0 0 .502 6.186C0 8.07 0 12 0 12s0 3.93.502 5.814a3.016 3.016 0 0 0 2.122 2.136c1.871.505 9.376.505 9.376.505s7.505 0 9.377-.505a3.015 3.015 0 0 0 2.122-2.136C24 15.93 24 12 24 12s0-3.93-.502-5.814zM9.545 15.568V8.432L15.818 12z"/></svg>'
+  };
+  const PLATS=['twitch','kick','x','youtube'];
+  const USERS={twitch:['xqcL','mike_hawk','chattyKaren','jpeg_warlord','soldulla','greencandle'],
+    kick:['trainwreck_fan','degenmike','0xJenna','bagholder','aposematic','wenlambo'],
+    x:['ansem_intern','cobie_lite','satoshi_vibes','marketmoth','gigachad_eth','onchainpat'],
+    youtube:['@firstpls','@redbartv','@chartwizard','@hodlqueen','@maru','@nattyfutures']};
+  const MSGS=['this is the play','ansem cooking again','GM everyone','bullish on this tbh','where is the entry',
+    'Banks carrying the stream','chat is this real','send it','$BTC to 100k EOY','green day lets ride',
+    'screenshot that one','the alpha is free today','W stream','okay that take is fire','up only',
+    'first time catching it live','diamond hands only','real ones know','respectfully bullish','to the moon'];
+  const feed=document.getElementById('feed');
+  const pick=a=>a[Math.floor(Math.random()*a.length)];
+  function addRow(){
+    const p=pick(PLATS), row=document.createElement('div');
+    row.className='row p-'+p;
+    row.innerHTML='<span class="ic">'+ICON[p]+'</span><span class="u">'+pick(USERS[p])+'</span><span class="t">'+pick(MSGS)+'</span>';
+    feed.appendChild(row);
+    while(feed.children.length>16) feed.removeChild(feed.firstChild);
+  }
+  for(let i=0;i<11;i++) addRow();
+  setInterval(addRow, 1100+Math.random()*900);
+
+  // small live counters in the panel
+  let hv=112400, hm=872;
+  const hvEl=document.getElementById('hvnum'), hmEl=document.getElementById('hmpm');
+  setInterval(()=>{ hv+=Math.floor((Math.random()-.45)*120); hm=Math.max(600,hm+Math.floor((Math.random()-.5)*40));
+    hvEl.textContent=hv.toLocaleString(); hmEl.textContent=hm; }, 1400);
+  hvEl.textContent=hv.toLocaleString(); hmEl.textContent=hm;
+
+  // marquee
+  const marq=document.getElementById('marq');
+  const seq=[['t','twitch','Twitch'],['k','kick','Kick'],['x','x','X'],['y','youtube','YouTube']];
+  let mhtml='';
+  for(let r=0;r<2;r++) for(const [c,ic,name] of seq)
+    mhtml+='<span class="mq '+c+'">'+ICON[ic]+name+' <span style="opacity:.4">·</span></span>';
+  marq.innerHTML=mhtml;
+
+  // reveal on scroll
+  const io=new IntersectionObserver((es)=>{es.forEach(e=>{if(e.isIntersecting){e.target.classList.add('in');io.unobserve(e.target);}})},{threshold:.18});
+  document.querySelectorAll('.reveal').forEach(el=>io.observe(el));
+  document.querySelector('.lead').classList.add('in');
+
+  // count-up
+  const cio=new IntersectionObserver((es)=>{es.forEach(e=>{if(!e.isIntersecting)return;
+    const el=e.target, to=+el.dataset.count, suf=el.dataset.suffix||'', t0=performance.now(), dur=1400;
+    (function tick(t){const k=Math.min(1,(t-t0)/dur), v=Math.round(to*(1-Math.pow(1-k,3)));
+      el.textContent=v.toLocaleString()+suf; if(k<1) requestAnimationFrame(tick);})(t0);
+    cio.unobserve(el);});},{threshold:.5});
+  document.querySelectorAll('[data-count]').forEach(el=>cio.observe(el));
+
+  // pointer-follow glow + card spotlight (transform/opacity only)
+  const glow=document.getElementById('glow');
+  addEventListener('pointermove',(e)=>{
+    glow.style.transform='translate('+(e.clientX-glow.offsetWidth/2)+'px,'+(e.clientY-glow.offsetHeight/2)+'px)';
+  },{passive:true});
+  document.querySelectorAll('[data-tilt]').forEach(c=>{
+    c.addEventListener('pointermove',e=>{const r=c.getBoundingClientRect();c.style.setProperty('--mx',((e.clientX-r.left)/r.width*100)+'%');});
+  });
+</script>
+</body>
+</html>
